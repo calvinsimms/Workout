@@ -87,7 +87,6 @@ struct ContentView: View {
                 }
                 .listStyle(.plain)
                 
-                Spacer()
             }
         }
     }
