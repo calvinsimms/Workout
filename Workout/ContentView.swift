@@ -34,7 +34,7 @@ struct ContentView: View {
                         Text("Edit")
                             .font(.system(.title3, weight: .bold))
                             .padding(10)
-                            .background(Color("Button"))
+                            .background(Color.black.opacity(0.1))
                             .foregroundColor(.black)
                             .cornerRadius(30)
                     }
@@ -44,7 +44,7 @@ struct ContentView: View {
                             .font(.title)
                             .foregroundColor(.black)
                             .padding(10)
-                            .background(Color("Button"))
+                            .background(Color.black.opacity(0.1))
                             .clipShape(Circle())
                     }
                 }
@@ -61,31 +61,42 @@ struct ContentView: View {
                     Spacer()
                 }
                 
-                List {
-                    ForEach(items) { item in
-                        NavigationLink {
-                            Text("Workout: \(item.title)")
-                        } label: {
-                            HStack {
-                                Text(item.title)
-                                    .font(.system(.title, weight: .bold))
-                                    .foregroundColor(.black)
-                                    .padding(.horizontal, 20)
-                                Spacer()
+                ZStack {
+                    List {
+                        ForEach(items) { item in
+                            NavigationLink {
+                                Text("Workout: \(item.title)")
+                            } label: {
+                                HStack {
+                                    Text(item.title)
+                                        .font(.system(.title, weight: .bold))
+                                        .foregroundColor(.black)
+                                        .padding(.horizontal, 20)
+                                    Spacer()
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.vertical, 20)
+                                .background(Color("Background"))
+                                
                             }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.vertical, 20)
-                            .background(Color("Background"))
+                            .listRowBackground(Color("Background"))
+                            .listRowSeparatorTint(.gray)
+                            .listRowSeparator(.visible, edges: .all) 
                             
                         }
-                        .listRowBackground(Color("Background"))
-                        .listRowSeparatorTint(.gray)
-                        .listRowSeparator(.visible, edges: .all) // Show separators
-                        
+                        .onDelete(perform: deleteItems)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                     }
-                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                    .listStyle(.plain)
+
+                    VStack {
+                        Spacer()
+                        
+                        ButtonNavBar()
+                    }
                 }
-                .listStyle(.plain)
+                
+                
                 
             }
         }
