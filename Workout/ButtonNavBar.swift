@@ -12,46 +12,38 @@ struct ButtonNavBar: View {
         
         ZStack {
             HStack{
-                Button("Home", systemImage: "house.fill") {
-                    
-                }
+                Button(action: { hapticClunk()
+                      }) { Label("Home", systemImage: "house.fill") }
                 .padding(10)
                 .padding(.leading, 10)
                 
-                Button("Calendar", systemImage: "calendar") {
-                    
-                }
-                .padding(10)
+                Button(action: { hapticClunk()
+                      }) { Label("Calendar", systemImage: "calendar") }
+                    .padding(10)
                 
-                Button("Stats", systemImage: "chart.xyaxis.line") {
-                    
-                }
-                .padding(10)
+                Button(action: { hapticClunk()
+                      }) { Label("Stats", systemImage: "chart.xyaxis.line") }
+                    .padding(10)
                 
-                Button("Settings", systemImage: "gearshape.fill") {
-                    
-                }
-                .padding(10)
-                .padding(.trailing, 10)
+                Button(action: { hapticClunk()
+                      }) { Label("Settings", systemImage: "gearshape.fill") }
+                    .padding(10)
+                    .padding(.trailing, 10)
             }
-    
-            
             .background(
-                ZStack {
-                    Color.black.opacity(0.1)
-                    .clipShape(RoundedRectangle(cornerRadius: 30))
-                    
-                    RoundedRectangle(cornerRadius: 30)
-                        .fill(.ultraThinMaterial)
-                }
-            )
-
-            
+                   RoundedRectangle(cornerRadius: 30)
+                    .fill(Color("Button").opacity(0.9))
+               )
             .font(.largeTitle)
             .labelStyle(.iconOnly)
             .tint(.black)
-            
+            .shadow(radius: 3)
         }
+    }
+    
+    private func hapticClunk() {
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.impactOccurred()
     }
 }
 

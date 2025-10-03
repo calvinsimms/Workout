@@ -34,9 +34,10 @@ struct ContentView: View {
                         Text("Edit")
                             .font(.system(.title3, weight: .bold))
                             .padding(10)
-                            .background(Color.black.opacity(0.1))
+                            .background(Color("Button").opacity(0.9))
                             .foregroundColor(.black)
                             .cornerRadius(30)
+                            .shadow(radius: 3)
                     }
                     Spacer()
                     Button(action: addItem) {
@@ -44,8 +45,10 @@ struct ContentView: View {
                             .font(.title)
                             .foregroundColor(.black)
                             .padding(10)
-                            .background(Color.black.opacity(0.1))
+                            .background(Color("Button").opacity(0.9))
                             .clipShape(Circle())
+                            .shadow(radius: 3)
+
                     }
                 }
                 .padding(.horizontal, 20)
@@ -60,6 +63,7 @@ struct ContentView: View {
                         .foregroundColor(.black)
                     Spacer()
                 }
+                
                 
                 ZStack {
                     List {
@@ -81,13 +85,15 @@ struct ContentView: View {
                             }
                             .listRowBackground(Color("Background"))
                             .listRowSeparatorTint(.gray)
-                            .listRowSeparator(.visible, edges: .all) 
-                            
+                            .listRowSeparator(.visible, edges: .all)
                         }
                         .onDelete(perform: deleteItems)
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                     }
                     .listStyle(.plain)
+                    .safeAreaInset(edge: .bottom) {
+                        Color.clear.frame(height: 80)
+                    }
 
                     VStack {
                         Spacer()
@@ -95,9 +101,6 @@ struct ContentView: View {
                         ButtonNavBar()
                     }
                 }
-                
-                
-                
             }
         }
     }
