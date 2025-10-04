@@ -83,12 +83,11 @@ struct CalendarView: View {
                 
             }
             
-            
-            
-            
             Spacer()
         }
         .background(Color("Background").ignoresSafeArea())
+        .colorScheme(.light)
+
     }
     
     // MARK: - Date Formatter
