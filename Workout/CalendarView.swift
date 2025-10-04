@@ -8,23 +8,29 @@
 import SwiftUI
 
 struct CalendarView: View {
+    @State private var selectedDate: Date = Date()
+
     var body: some View {
-        ZStack {
-            Color("Background")
-                .ignoresSafeArea()
+        VStack {
+            DatePicker(
+                "Select Date",
+                selection: $selectedDate,
+                displayedComponents: .date
+            )
+            .datePickerStyle(.graphical) 
+            .padding()
+
+            Text("Selected Date: \(selectedDate, formatter: dateFormatter)")
             
-            VStack {
-                
-                Spacer()
-                
-                Text("Calendar")
-                    .font(.largeTitle)
-                    .foregroundStyle(.black)
-                
-                Spacer()
-                
-            }
+            Spacer()
         }
+        .background(Color("Background"))
+    }
+
+    private var dateFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .long
+        return formatter
     }
 }
 
