@@ -8,45 +8,55 @@
 import SwiftUI
 
 struct ButtonNavBar: View {
-    var body: some View {
-        
-        ZStack {
-            HStack{
-                Button(action: { hapticClunk()
-                      }) { Label("Home", systemImage: "house.fill") }
-                .padding(10)
-                .padding(.leading, 10)
-                
-                Button(action: { hapticClunk()
-                      }) { Label("Calendar", systemImage: "calendar") }
-                    .padding(10)
-                
-                Button(action: { hapticClunk()
-                      }) { Label("Stats", systemImage: "chart.xyaxis.line") }
-                    .padding(10)
-                
-                Button(action: { hapticClunk()
-                      }) { Label("Settings", systemImage: "gearshape.fill") }
-                    .padding(10)
-                    .padding(.trailing, 10)
+    
+    @Binding var selectedTab: String
+
+        private let buttons: [NavButton] = [
+            NavButton(label: "Home", systemImage: "house.fill"),
+            NavButton(label: "Calendar", systemImage: "calendar"),
+            NavButton(label: "Stats", systemImage: "chart.xyaxis.line"),
+            NavButton(label: "Settings", systemImage: "gearshape.fill")
+        ]
+
+        struct NavButton: Identifiable {
+            let id = UUID()
+            let label: String
+            let systemImage: String
+        }
+
+        var body: some View {
+            HStack(spacing: 20) {
+                ForEach(buttons) { button in
+                    Button(action: {
+                        selectedTab = button.label
+                        hapticClunk()
+                    }) {
+                        Image(systemName: button.systemImage)
+                            .font(.largeTitle)
+                            
+                        
+                            .foregroundColor(selectedTab == button.label ? .black : .gray)
+                    }
+                }
             }
+            .padding(.vertical, 10)
+            .padding(.horizontal, 20)
             .background(
-                   RoundedRectangle(cornerRadius: 30)
+                RoundedRectangle(cornerRadius: 30)
                     .fill(Color("Button").opacity(0.9))
-               )
-            .font(.largeTitle)
-            .labelStyle(.iconOnly)
-            .tint(.black)
-            .shadow(radius: 3)
+                    .shadow(radius: 3)
+            )
+            
+        }
+
+        private func hapticClunk() {
+            let generator = UIImpactFeedbackGenerator(style: .light)
+            generator.impactOccurred()
         }
     }
-    
-    private func hapticClunk() {
-        let generator = UIImpactFeedbackGenerator(style: .light)
-        generator.impactOccurred()
-    }
-}
-
 #Preview {
-    ButtonNavBar()
+    // Provide a constant binding for preview
+    ButtonNavBar(selectedTab: .constant("Home"))
+        .padding()
+        .background(Color.gray.opacity(0.2)) // optional, helps see the rounded rect
 }
