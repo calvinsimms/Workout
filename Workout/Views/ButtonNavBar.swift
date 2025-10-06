@@ -12,7 +12,7 @@ struct ButtonNavBar: View {
     @Binding var selectedTab: String
 
         private let buttons: [NavButton] = [
-            NavButton(label: "Home", systemImage: "house.fill"),
+            NavButton(label: "Workouts", systemImage: "dumbbell.fill"),
             NavButton(label: "Calendar", systemImage: "calendar"),
             NavButton(label: "Stats", systemImage: "chart.xyaxis.line"),
             NavButton(label: "Settings", systemImage: "gearshape.fill")

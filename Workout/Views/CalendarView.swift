@@ -16,6 +16,11 @@ struct Event: Identifiable {
 
 // MARK: - 
 let sampleEvents: [Event] = [
+    Event(date: Date(), title: "Pull Day"),
+    Event(date: Date(), title: "Running"),
+    Event(date: Date(), title: "Chest"),
+    Event(date: Date(), title: "Chest"),
+    Event(date: Date(), title: "Chest"),
     Event(date: Date(), title: "Chest"),
     Event(date: Date(), title: "Chest")
 ]
@@ -31,7 +36,7 @@ struct CalendarView: View {
     }
     
     var body: some View {
-        VStack {
+        VStack(spacing: 0) {
 
             DatePicker(
                 "Select Date",
@@ -47,6 +52,7 @@ struct CalendarView: View {
                 Text("Workouts on this day")
                     .font(.headline)
                     .padding(.leading, 30)
+                    .padding(.bottom, 20)
                 
                 Spacer()
                 
@@ -64,8 +70,11 @@ struct CalendarView: View {
                         .shadow(radius: 2)
                 }
                 .padding(.trailing, 30)
+                .padding(.bottom, 20)
                 
             }
+            
+            Divider()
             // Event List
             if eventsForSelectedDate.isEmpty {
                 Text("No workouts for this day")
@@ -82,15 +91,16 @@ struct CalendarView: View {
                     .listRowSeparatorTint(.gray)
                 }
                 .listStyle(.plain)
+                .safeAreaInset(edge: .bottom) {
+                    Color.clear.frame(height: 100)
+                }
             }
             Spacer()
         }
-        .background(Color("Background").ignoresSafeArea())
+        .background(Color("Background"))
         .colorScheme(.light)
-        
+        .ignoresSafeArea(edges: .bottom)
     }
-    
-  
 }
 
 // MARK: - Preview
