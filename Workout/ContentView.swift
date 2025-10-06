@@ -46,7 +46,7 @@ struct ContentView: View {
                 }
                 .tag("Settings")
             }
-            .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+            .tabViewStyle(DefaultTabViewStyle())
 
             ButtonNavBar(selectedTab: $selectedTab)
                 .padding(.bottom, 30)
@@ -81,8 +81,6 @@ struct ContentView: View {
         }
     }
 }
-
-
 
 #Preview {
     ContentView()

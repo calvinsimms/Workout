@@ -14,16 +14,16 @@ struct Event: Identifiable {
     let title: String
 }
 
-// MARK: - Sample Events
+// MARK: - 
 let sampleEvents: [Event] = [
+    Event(date: Date(), title: "Chest"),
     Event(date: Date(), title: "Chest")
 ]
 
 // MARK: - Calendar View
 struct CalendarView: View {
     @State private var selectedDate: Date = Date()
-    
-    // Filter events for the selected day
+
     private var eventsForSelectedDate: [Event] {
         sampleEvents.filter { event in
             Calendar.current.isDate(event.date, inSameDayAs: selectedDate)
@@ -39,7 +39,7 @@ struct CalendarView: View {
                 displayedComponents: [.date]
             )
             .datePickerStyle(.graphical)
-            .accentColor(.blue)
+            .accentColor(.black)
             .padding()
      
             
@@ -57,9 +57,9 @@ struct CalendarView: View {
                     Text("Today")
                         .padding(.horizontal)
                         .padding(.vertical, 6)
-                        .background(Color.blue)
+                        .background(.black)
                         .foregroundColor(.white)
-                        .cornerRadius(8)
+                        .cornerRadius(40)
                 }
                 .padding(.trailing, 30)
                 
@@ -75,31 +75,24 @@ struct CalendarView: View {
                     HStack {
                         Text(event.title)
                     }
-                    .font(.title)
-                    .padding()
-                  
+                    .font(.system(.title, weight: .bold))
+                    .padding(.vertical, 10)
+                    .listRowBackground(Color("Background"))
+                    .listRowSeparatorTint(.gray)
                 }
                 .listStyle(.plain)
-                
             }
-            
             Spacer()
         }
         .background(Color("Background").ignoresSafeArea())
         .colorScheme(.light)
-
+        
     }
     
-    // MARK: - Date Formatter
-    private var dateFormatter: DateFormatter {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .long
-        return formatter
-    }
+  
 }
 
 // MARK: - Preview
 #Preview {
     CalendarView()
 }
-
