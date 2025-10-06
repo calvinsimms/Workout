@@ -33,8 +33,6 @@ struct ButtonNavBar: View {
                     }) {
                         Image(systemName: button.systemImage)
                             .font(.largeTitle)
-                            
-                        
                             .foregroundColor(selectedTab == button.label ? .black : .gray)
                     }
                 }
@@ -44,9 +42,8 @@ struct ButtonNavBar: View {
             .background(
                 RoundedRectangle(cornerRadius: 30)
                     .fill(Color("Button").opacity(0.9))
-                    .shadow(radius: 3)
+                    .shadow(radius: 2)
             )
-            
         }
 
         private func hapticClunk() {
@@ -55,8 +52,7 @@ struct ButtonNavBar: View {
         }
     }
 #Preview {
-    // Provide a constant binding for preview
     ButtonNavBar(selectedTab: .constant("Home"))
         .padding()
-        .background(Color.gray.opacity(0.2)) // optional, helps see the rounded rect
+        .background(Color.gray.opacity(0.2))
 }

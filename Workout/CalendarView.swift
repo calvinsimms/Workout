@@ -55,16 +55,17 @@ struct CalendarView: View {
                     selectedDate = Date()
                 }) {
                     Text("Today")
-                        .padding(.horizontal)
-                        .padding(.vertical, 6)
-                        .background(.black)
-                        .foregroundColor(.white)
-                        .cornerRadius(40)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 7)
+                        .background(Color("Button").opacity(0.9))
+                        .foregroundColor(.black)
+                        .fontWeight(.bold)
+                        .cornerRadius(30)
+                        .shadow(radius: 2)
                 }
                 .padding(.trailing, 30)
                 
             }
-            
             // Event List
             if eventsForSelectedDate.isEmpty {
                 Text("No workouts for this day")

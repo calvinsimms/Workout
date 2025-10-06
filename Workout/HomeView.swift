@@ -16,86 +16,87 @@ struct HomeView: View {
     var moveItems: (IndexSet, Int) -> Void
 
     var body: some View {
-        ZStack {
-            Color("Background")
-                .ignoresSafeArea()
-            
-            VStack{
-                
-                HStack {
-                    Button(action: {
-                        withAnimation {
-                            editMode?.wrappedValue = editMode?.wrappedValue == .active ? .inactive : .active
-                        }
-                    }) {
-                        Text("Edit")
-                            .font(.system(.title3, weight: .bold))
-                            .padding(10)
-                            .background(Color("Button").opacity(0.9))
-                            .foregroundColor(.black)
-                            .cornerRadius(30)
-                            .shadow(radius: 3)
-                    }
-                    Spacer()
-                    Button(action: addItem) {
-                        Image(systemName: "plus")
-                            .font(.title)
-                            .foregroundColor(.black)
-                            .padding(10)
-                            .background(Color("Button").opacity(0.9))
-                            .clipShape(Circle())
-                            .shadow(radius: 3)
+        VStack(spacing: 0){
 
+            HStack {
+                Button(action: {
+                    withAnimation {
+                        editMode?.wrappedValue = editMode?.wrappedValue == .active ? .inactive : .active
                     }
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
-                
-                // Header
-                HStack {
-                    Text("Workout")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
+                }) {
+                    Text("Edit")
+                        .font(.system(.title3, weight: .bold))
+                        .padding(10)
+                        .background(Color("Button").opacity(0.9))
                         .foregroundColor(.black)
-                    Spacer()
+                        .cornerRadius(30)
+                        .shadow(radius: 3)
                 }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 20)
+                Spacer()
+                Button(action: addItem) {
+                    Image(systemName: "plus")
+                        .font(.title)
+                        .foregroundColor(.black)
+                        .padding(10)
+                        .background(Color("Button").opacity(0.9))
+                        .clipShape(Circle())
+                        .shadow(radius: 3)
 
-                List {
-                    ForEach(items) { item in
-                        NavigationLink {
-                            Text("Workout: \(item.title)")
-                        } label: {
-                            HStack {
-                                Text(item.title)
-                                    .font(.system(.title, weight: .bold))
-                                    .foregroundColor(.black)
-                                    .padding(.horizontal, 20)
-                                Spacer()
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.vertical, 20)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 20)
+            
+            // Header
+            HStack {
+                Text("Workout")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                    .foregroundColor(.black)
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 20)
+            
+            Divider()
+
+            List {
+                ForEach(items) { item in
+                    NavigationLink {
+                        Text("Workout: \(item.title)")
+                    } label: {
+                        HStack {
+                            Text(item.title)
+                                .font(.system(.title, weight: .bold))
+                                .foregroundColor(.black)
+                                .padding(.horizontal, 20)
+                            Spacer()
                         }
-                        .buttonStyle(PlainButtonStyle())
-                        .listRowBackground(Color("Background"))
-                        .listRowSeparatorTint(.gray)
-                        
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, 20)
                     }
-                    .onDelete(perform: deleteItems)
-                    .onMove(perform: moveItems)
-                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 20))
+                    .buttonStyle(PlainButtonStyle())
+                    .listRowBackground(Color("Background"))
+                    .listRowSeparatorTint(.gray)
+                    
+                    
                 }
-                .listStyle(.plain)
-                .environment(\.editMode, editMode)
-                .safeAreaInset(edge: .bottom) {
-                    Color.clear.frame(height: 100)
-                }
+                .onDelete(perform: deleteItems)
+                .onMove(perform: moveItems)
+                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 20))
                 
             }
+            .listStyle(.plain)
+            .environment(\.editMode, editMode)
+            .safeAreaInset(edge: .bottom) {
+                Color.clear.frame(height: 100)
+            }
+            
         }
+        .background(Color("Background"))
     }
 }
+
 
 
 #Preview {
