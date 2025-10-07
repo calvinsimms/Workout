@@ -2,64 +2,48 @@
 //  ExerciseSelectionView.swift
 //  Workout
 //
-//  Created by Calvin Simms on 2025-10-06.
+//  Created by Calvin Simms on 2025-10-07.
 //
 
 import SwiftUI
-
-
-struct StatefulPreviewWrapper<Value, Content: View>: View {
-    @State var value: Value
-    var content: (Binding<Value>) -> Content
-
-    init(_ value: Value, content: @escaping (Binding<Value>) -> Content) {
-        _value = State(initialValue: value)
-        self.content = content
-    }
-
-    var body: some View {
-        content($value)
-    }
-}
+import SwiftData
 
 struct ExerciseSelectionView: View {
     @Binding var selectedExercises: Set<Exercise>
-    @State private var exercises: [Exercise] = []
+    @Query(sort: \Exercise.name, order: .forward) private var allExercises: [Exercise]
 
     var body: some View {
-        List(exercises, id: \.self) { exercise in
-            Button {
+        List(allExercises, id: \.id) { exercise in
+            HStack {
+                Text(exercise.name)
+                Spacer()
                 if selectedExercises.contains(exercise) {
-                    selectedExercises.remove(exercise)
-                } else {
-                    selectedExercises.insert(exercise)
+                    Image(systemName: "checkmark")
+                        .foregroundColor(.blue)
                 }
-            } label: {
-                HStack {
-                    Text(exercise.name)
-                    Spacer()
-                    if selectedExercises.contains(exercise) {
-                        Image(systemName: "checkmark")
-                    }
-                }
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                toggleSelection(for: exercise)
             }
         }
         .navigationTitle("Select Exercises")
-        .onAppear {
-            
+    }
+
+    private func toggleSelection(for exercise: Exercise) {
+        if selectedExercises.contains(exercise) {
+            selectedExercises.remove(exercise)
+        } else {
+            selectedExercises.insert(exercise)
         }
     }
 }
 
+
+
 #Preview {
-    // Create a sample set of exercises
-    let sampleExercises: Set<Exercise> = [
-        Exercise(name: "Push Ups"),
-        Exercise(name: "Squats")
-    ]
-    
-    // Use @State to wrap it for binding
-    StatefulPreviewWrapper(sampleExercises) { binding in
-        ExerciseSelectionView(selectedExercises: binding)
-    }
+    @Previewable @State var selected: Set<Exercise> = []
+    ExerciseSelectionView(selectedExercises: $selected)
+        .modelContainer(for: [Exercise.self], inMemory: true)
 }
+

@@ -6,14 +6,25 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct CreateWorkoutView: View {
-    @Binding var workout: Workout
+    @Bindable var workout: Workout
     var isNewWorkout: Bool
-    var onSave: (() -> Void)?
+    var onSave: ((Workout) -> Void)?
     @Environment(\.dismiss) var dismiss
 
-    @State private var selectedExercises: Set<Exercise> = []
+    @State private var selectedExercises: Set<Exercise>
+
+    init(workout: Bindable<Workout>, isNewWorkout: Bool, onSave: ((Workout) -> Void)? = nil) {
+        self._workout = workout
+        self.isNewWorkout = isNewWorkout
+        self.onSave = onSave
+
+        // Use the actual wrappedValue of Bindable<Workout>
+        let exercisesSet = Set(workout.wrappedValue.exercises) // assuming 'exercises' is Set<Exercise>
+        _selectedExercises = State(initialValue: exercisesSet)
+    }
 
     var body: some View {
         Form {
@@ -25,8 +36,8 @@ struct CreateWorkoutView: View {
                 NavigationLink("Select Exercises") {
                     ExerciseSelectionView(selectedExercises: $selectedExercises)
                 }
-                // Show selected exercises
-                ForEach(Array(selectedExercises), id: \.self) { exercise in
+
+                ForEach(Array(selectedExercises).sorted(by: { $0.name < $1.name }), id: \.id) { exercise in
                     Text(exercise.name)
                 }
             }
@@ -35,26 +46,31 @@ struct CreateWorkoutView: View {
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Save") {
-                    workout.exercises = Array(selectedExercises)
-                    onSave?()
+                    workout.exercises = Array(selectedExercises).sorted { $0.name < $1.name }
+                    onSave?(workout)
                     dismiss()
                 }
                 .disabled(workout.title.trimmingCharacters(in: .whitespaces).isEmpty)
             }
 
             ToolbarItem(placement: .cancellationAction) {
-                Button("Cancel") { dismiss() }
+                Button("Cancel") {
+                    dismiss()
+                }
             }
-        }
-        .onAppear {
-            selectedExercises = Set(workout.exercises)
         }
     }
 }
 
+
+
 #Preview {
-    CreateWorkoutView(
-        workout: .constant(Workout(title: "Example")),
-        isNewWorkout: true
-    )
+    // Create an in-memory model container for SwiftData previews
+    let workout = Workout(title: "Example", exercises: [
+        Exercise(name: "Squats"),
+        Exercise(name: "Lunges")
+    ])
+    CreateWorkoutView(workout: Bindable(workout), isNewWorkout: true)
+        .modelContainer(for: [Workout.self, Exercise.self], inMemory: true)
 }
+

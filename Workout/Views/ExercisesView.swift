@@ -12,9 +12,12 @@ struct ExercisesView: View {
     @State private var isEditing = false
     @State private var editMode: EditMode = .inactive
     
-    // Temporary state for creating a new exercise
     @State private var newExercise = Exercise(name: "")
     @State private var creatingExercise = false
+    
+    init(exercises: [Exercise] = []) {
+          _exercises = State(initialValue: exercises)
+      }
     
     var body: some View {
         NavigationStack {
@@ -133,5 +136,12 @@ struct ExercisesView: View {
 }
 
 #Preview {
-    ExercisesView()
+    ExercisesView(
+        exercises: [
+            Exercise(name: "Squats"),
+            Exercise(name: "Deadlifts"),
+            Exercise(name: "Bench Press")
+        ]
+    )
 }
+

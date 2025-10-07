@@ -8,7 +8,7 @@ import Foundation
 import SwiftData
 
 @Model
-final class Exercise: Identifiable {
+final class Exercise: Identifiable, Hashable {
     @Attribute(.unique) var id: UUID
     var name: String
     
@@ -16,4 +16,13 @@ final class Exercise: Identifiable {
         self.id = id
         self.name = name
     }
+    
+    static func == (lhs: Exercise, rhs: Exercise) -> Bool {
+           lhs.id == rhs.id
+       }
+    
+    func hash(into hasher: inout Hasher) {
+           hasher.combine(id)
+       }
+    
 }

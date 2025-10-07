@@ -7,12 +7,14 @@
 
 import SwiftUI
 
-struct WorkoutsView: View {
+struct WorkoutListView: View {
     @Environment(\.editMode) private var editMode
     @State private var isEditing: Bool = false
+    @State private var isCreatingNewWorkout = false
+    @State private var newWorkout = Workout(title: "", order: 0, exercises: [])
 
     var workouts: [Workout]
-    var addWorkout: () -> Void
+    var addWorkout: (Workout) -> Void
     var deleteWorkouts: (IndexSet) -> Void
     var moveWorkouts: (IndexSet, Int) -> Void
 
@@ -40,9 +42,17 @@ struct WorkoutsView: View {
 
                 Spacer()
 
-                Button(action: {
-                    addWorkout()
-                }) {
+                NavigationLink(
+                    destination: CreateWorkoutView(
+                        workout: Bindable(newWorkout),
+                        isNewWorkout: true,
+                        onSave: { workout in
+                            addWorkout(workout)
+                            newWorkout = Workout(title: "", order: 0, exercises: [])
+                        }
+                    )
+                ) {
+
                     Image(systemName: "plus")
                         .font(.title)
                         .foregroundColor(.black)
@@ -72,7 +82,7 @@ struct WorkoutsView: View {
             List {
                 ForEach(workouts) { workout in
                     NavigationLink {
-                        CreateWorkoutView(workout: .constant(workout), isNewWorkout: false)
+                        WorkoutView(workout: workout)
                     } label: {
                         HStack {
                             Text(workout.title)
@@ -115,9 +125,9 @@ struct WorkoutsView: View {
         Workout(title: "Evening Strength", order: 1, exercises: [])
     ]
 
-    WorkoutsView(
+    WorkoutListView(
         workouts: sampleWorkouts,
-        addWorkout: { sampleWorkouts.append(Workout(title: "New Workout", order: sampleWorkouts.count)) },
+        addWorkout: { _ in sampleWorkouts.append(Workout(title: "New Workout", order: sampleWorkouts.count)) },
         deleteWorkouts: { offsets in sampleWorkouts.remove(atOffsets: offsets) },
         moveWorkouts: { source, destination in sampleWorkouts.move(fromOffsets: source, toOffset: destination) }
     )

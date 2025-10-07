@@ -18,10 +18,6 @@ struct Event: Identifiable {
 let sampleEvents: [Event] = [
     Event(date: Date(), title: "Pull Day"),
     Event(date: Date(), title: "Running"),
-    Event(date: Date(), title: "Chest"),
-    Event(date: Date(), title: "Chest"),
-    Event(date: Date(), title: "Chest"),
-    Event(date: Date(), title: "Chest"),
     Event(date: Date(), title: "Chest")
 ]
 
