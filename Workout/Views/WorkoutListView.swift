@@ -33,7 +33,7 @@ struct WorkoutListView: View {
                 }) {
                     Image(systemName: isEditing ? "checkmark" : "pencil")
                         .font(.title2)
-                        .foregroundColor(workouts.isEmpty ? .gray : .black)
+                        .foregroundColor(workouts.isEmpty ? Color("Grayout") : .black)
                         .padding(10)
                         .background((Color("Button").opacity(0.9)))
                         .cornerRadius(30)

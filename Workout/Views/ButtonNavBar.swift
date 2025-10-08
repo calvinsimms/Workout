@@ -35,14 +35,14 @@ struct ButtonNavBar: View {
                             .resizable()
                             .scaledToFit()
                             .frame(height: 22)
-                            .foregroundColor(selectedTab == button.label ? .black : .gray)
-                        
+                            .foregroundColor(selectedTab == button.label ? Color("Grayout") : .black)
+ 
                         Text(button.label)
                             .font(.caption)
-                            .fontWeight(selectedTab == button.label ? .semibold : .regular)
-                            .foregroundColor(selectedTab == button.label ? .black : .gray)
+                            .foregroundColor(selectedTab == button.label ? Color("Grayout") : .black)
+                        
                     }
-                    .frame(maxWidth: .infinity) //
+                    .frame(maxWidth: .infinity)
                 }
             }
         }
