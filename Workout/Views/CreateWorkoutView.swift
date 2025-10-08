@@ -52,12 +52,6 @@ struct CreateWorkoutView: View {
                 }
                 .disabled(workout.title.trimmingCharacters(in: .whitespaces).isEmpty)
             }
-
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Cancel") {
-                    dismiss()
-                }
-            }
         }
     }
 }

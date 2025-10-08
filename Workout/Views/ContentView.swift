@@ -34,7 +34,7 @@ struct ContentView: View {
                     CalendarView()
                 }
             }
-            else if selectedTab == "Stats" {
+            else if selectedTab == "Statistics" {
                 NavigationStack {
                     StatsView()
                 }

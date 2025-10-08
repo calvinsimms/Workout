@@ -8,51 +8,63 @@
 import SwiftUI
 
 struct ButtonNavBar: View {
-    
     @Binding var selectedTab: String
 
-        private let buttons: [NavButton] = [
-            NavButton(label: "Workouts", systemImage: "dumbbell.fill"),
-            NavButton(label: "Calendar", systemImage: "calendar"),
-            NavButton(label: "Stats", systemImage: "chart.xyaxis.line"),
-            NavButton(label: "Settings", systemImage: "gearshape.fill")
-        ]
+    private let buttons: [NavButton] = [
+        NavButton(label: "Workouts", systemImage: "list.bullet.rectangle"),
+        NavButton(label: "Calendar", systemImage: "calendar"),
+        NavButton(label: "Statistics", systemImage: "chart.xyaxis.line"),
+        NavButton(label: "Settings", systemImage: "gearshape")
+    ]
+    
+    struct NavButton: Identifiable {
+        let id = UUID()
+        let label: String
+        let systemImage: String
+    }
 
-        struct NavButton: Identifiable {
-            let id = UUID()
-            let label: String
-            let systemImage: String
-        }
-
-        var body: some View {
-            HStack(spacing: 20) {
-                ForEach(buttons) { button in
-                    Button(action: {
-                        selectedTab = button.label
-                        hapticClunk()
-                    }) {
+    var body: some View {
+        HStack {
+            ForEach(buttons) { button in
+                Button(action: {
+                    selectedTab = button.label
+                    hapticClunk()
+                }) {
+                    VStack(spacing: 4) {
                         Image(systemName: button.systemImage)
-                            .font(.largeTitle)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(height: 22)
+                            .foregroundColor(selectedTab == button.label ? .black : .gray)
+                        
+                        Text(button.label)
+                            .font(.caption)
+                            .fontWeight(selectedTab == button.label ? .semibold : .regular)
                             .foregroundColor(selectedTab == button.label ? .black : .gray)
                     }
+                    .frame(maxWidth: .infinity) //
                 }
             }
-            .padding(.vertical, 10)
-            .padding(.horizontal, 20)
-            .background(
-                RoundedRectangle(cornerRadius: 30)
-                    .fill(Color("Button").opacity(0.9))
-                    .shadow(radius: 2)
-            )
         }
-
-        private func hapticClunk() {
-            let generator = UIImpactFeedbackGenerator(style: .light)
-            generator.impactOccurred()
-        }
+        .padding(.vertical, 10)
+        .padding(.horizontal, 20)
+        .frame(maxWidth: 330)
+        .background(
+            RoundedRectangle(cornerRadius: 30)
+                .fill(Color("Button").opacity(0.9))
+                .shadow(radius: 2)
+        )
     }
+
+    private func hapticClunk() {
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.impactOccurred()
+    }
+}
+
 #Preview {
-    ButtonNavBar(selectedTab: .constant("Home"))
+    ButtonNavBar(selectedTab: .constant("Workouts"))
         .padding()
         .background(Color.gray.opacity(0.2))
 }
+

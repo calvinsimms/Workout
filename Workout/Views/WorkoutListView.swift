@@ -23,23 +23,24 @@ struct WorkoutListView: View {
 
             // MARK: - Top Buttons
             HStack {
-                if !workouts.isEmpty {
-                    Button(action: {
+                Button(action: {
+                    if !workouts.isEmpty { // Only toggle edit mode if workouts exist
                         withAnimation {
                             isEditing.toggle()
                             editMode?.wrappedValue = isEditing ? .active : .inactive
                         }
-                    }) {
-                        Image(systemName: isEditing ? "checkmark" : "pencil")
-                            .font(.title)
-                            .foregroundColor(.black)
-                            .padding(10)
-                            .background(Color("Button").opacity(0.9))
-                            .cornerRadius(30)
-                            .shadow(radius: 2)
                     }
+                }) {
+                    Image(systemName: isEditing ? "checkmark" : "pencil")
+                        .font(.title2)
+                        .foregroundColor(workouts.isEmpty ? .gray : .black)
+                        .padding(10)
+                        .background((Color("Button").opacity(0.9)))
+                        .cornerRadius(30)
+                        .shadow(radius: 2)
                 }
-
+                .disabled(workouts.isEmpty)
+            
                 Spacer()
 
                 NavigationLink(
@@ -54,7 +55,7 @@ struct WorkoutListView: View {
                 ) {
 
                     Image(systemName: "plus")
-                        .font(.title)
+                        .font(.title2)
                         .foregroundColor(.black)
                         .padding(10)
                         .background(Color("Button").opacity(0.9))
@@ -63,9 +64,8 @@ struct WorkoutListView: View {
                 }
             }
             .padding(.horizontal, 20)
-            .padding(.top, 20)
-
-            // MARK: - Header
+            .padding(.bottom, 20)
+            
             HStack {
                 Text("Workouts")
                     .font(.largeTitle)
@@ -74,7 +74,7 @@ struct WorkoutListView: View {
                 Spacer()
             }
             .padding(.horizontal, 20)
-            .padding(.vertical, 20)
+            .padding(.bottom, 20)
 
             Divider()
 
@@ -96,7 +96,6 @@ struct WorkoutListView: View {
                     }
                     .buttonStyle(PlainButtonStyle())
                     .listRowBackground(Color("Background"))
-                    .listRowSeparatorTint(.gray)
                 }
                 .onDelete { offsets in
                     deleteWorkouts(offsets)

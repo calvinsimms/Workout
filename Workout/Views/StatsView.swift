@@ -13,15 +13,23 @@ struct StatsView: View {
             Color("Background")
                 .ignoresSafeArea()
             
-            VStack {
+            VStack(spacing: 0) {
+        
+                
+                HStack {
+                    Text("Statistics")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .foregroundColor(.black)
+                    Spacer()
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 20)
+                .padding(.top, 40)
+
+                Divider()
                 
                 Spacer()
-                
-                Text("Stats")
-                    .font(.largeTitle)
-                
-                Spacer()
-                
             }
         }
     }

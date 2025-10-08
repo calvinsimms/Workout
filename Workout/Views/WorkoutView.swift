@@ -16,11 +16,13 @@ struct WorkoutView: View {
     @State private var isRunning = false
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .leading, spacing: 0) {
             Text(workout.title)
                 .font(.largeTitle)
                 .bold()
-                .padding(.horizontal)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 10)
+                .padding(.bottom, 10)
             
             Divider()
             
@@ -31,10 +33,13 @@ struct WorkoutView: View {
             } else {
                 List(workout.exercises, id: \.id) { exercise in
                     Text(exercise.name)
-                        .font(.headline)
-                        .padding(.vertical, 5)
+                        .font(.system(.title, weight: .bold))
+                        .padding(.vertical, 10)
+                        .buttonStyle(PlainButtonStyle())
+                        .listRowBackground(Color("Background"))
                 }
                 .listStyle(.plain)
+                
             }
             
             Spacer()
@@ -46,6 +51,7 @@ struct WorkoutView: View {
                     
                     Spacer()
                 }
+                .padding(.horizontal, 20)
                 
                 HStack {
                     Text("Lap: \(timeFormatted(lapTime))")
@@ -53,36 +59,46 @@ struct WorkoutView: View {
                     
                     Spacer()
                 }
+                .padding(.horizontal, 20)
                 
                 HStack(spacing: 20) {
                     Button(action: startPauseTimer) {
                         Text(isRunning ? "Stop" : "Start")
+                            .font(.title)
+                            .fontWeight(.bold)
                             .frame(maxWidth: .infinity)
-                            .padding()
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 7)
                             .background(isRunning ? Color.gray : Color.gray)
-                            .foregroundColor(.white)
-                            .cornerRadius(10)
+                            .foregroundColor(.black)
+                            .cornerRadius(30)
                     }
                     
                     Button("Lap") {
                         lapTime = 0
                     }
+                    .font(.title)
+                    .fontWeight(.bold)
                     .frame(maxWidth: .infinity)
-                    .padding()
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 7)
                     .background(Color.gray)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
+                    .foregroundColor(.black)
+                    .cornerRadius(30)
                     
                     Button("Reset") {
                         resetTimer()
                     }
+                    .font(.title)
+                    .fontWeight(.bold)
                     .frame(maxWidth: .infinity)
-                    .padding()
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 7)
                     .background(Color.gray)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
+                    .foregroundColor(.black)
+                    .cornerRadius(30)
                 }
-                .padding(.horizontal, 30)
+                .padding(.horizontal, 20)
                 .padding(.bottom, 80)
             }
             
@@ -97,13 +113,11 @@ struct WorkoutView: View {
                 }
             }
         }
-        .sheet(isPresented: $isEditing) {
-            NavigationStack {
-                CreateWorkoutView(
-                    workout: $workout,
-                    isNewWorkout: false
-                )
-            }
+        .navigationDestination(isPresented: $isEditing) {
+            CreateWorkoutView(
+                workout: $workout,
+                isNewWorkout: false
+            )
         }
         .onDisappear {
             timer?.invalidate()

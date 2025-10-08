@@ -78,13 +78,13 @@ struct ExercisesView: View {
                         NavigationLink(value: exercise) {
                             HStack {
                                 Text(exercise.name)
-                                    .font(.system(.title, weight: .bold))
+                                    .fontWeight(.bold)
                                     .foregroundColor(.black)
                                     .padding(.horizontal, 20)
                                 Spacer()
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.vertical, 20)
+                            
                         }
                         .buttonStyle(PlainButtonStyle())
                         .listRowBackground(Color("Background"))

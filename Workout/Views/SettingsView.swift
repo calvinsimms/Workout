@@ -14,33 +14,49 @@ struct SettingsView: View {
                 Color("Background")
                     .ignoresSafeArea()
                 
-                VStack(spacing: 40) {
-                    Spacer()
+                VStack(spacing: 0) {
+            
                     
-                    Text("Settings")
-                        .font(.largeTitle)
-                        .bold()
-                    
-                    // MARK: - Manage Exercises Button
-                    NavigationLink {
-                        ExercisesView()
-                    } label: {
-                        Text("Manage Exercises")
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.white)
-                            .padding()
-                            .frame(maxWidth: .infinity)
-                            .background(Color.blue)
-                            .cornerRadius(12)
-                            .shadow(radius: 3)
+                    HStack {
+                        Text("Settings")
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
+                            .foregroundColor(.black)
+                        Spacer()
                     }
                     .padding(.horizontal, 20)
+                    .padding(.vertical, 20)
+                    .padding(.top, 40)
+
+                    Divider()
                     
-                    Spacer()
+                    
+                    NavigationStack {
+                        List {
+                            Section {
+                                NavigationLink(destination: ExercisesView()) {
+                                    HStack {
+                                        Text("Manage Exercises")
+                                            .font(.system(.title, weight: .bold))
+                                            .foregroundColor(.black)
+                                        Spacer()
+                           
+                                    }
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.vertical, 10)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .listRowBackground(Color("Background"))
+                        }
+                        
+                        .listStyle(.plain)
+                        .scrollContentBackground(.hidden)
+                        .background(Color("Background"))
+                    
+                    }
                 }
             }
-            .navigationTitle("Settings")
         }
     }
 }

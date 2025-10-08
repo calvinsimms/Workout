@@ -10,8 +10,9 @@ import SwiftUI
 struct CreateExerciseView: View {
     @Binding var exercise: Exercise
     var isNewExercise: Bool
-    var onSave: (() -> Void)?   // Called when Save is tapped
+    var onSave: (() -> Void)?
     @Environment(\.dismiss) var dismiss
+    @Environment(\.modelContext) private var modelContext
     
     var body: some View {
         Form {
@@ -23,6 +24,9 @@ struct CreateExerciseView: View {
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Save") {
+                    if isNewExercise {
+                        modelContext.insert(exercise)
+                    }
                     onSave?()
                     dismiss()
                 }
