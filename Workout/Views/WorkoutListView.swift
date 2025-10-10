@@ -86,7 +86,7 @@ struct WorkoutListView: View {
                     } label: {
                         HStack {
                             Text(workout.title)
-                                .font(.system(.title, weight: .bold))
+                                .font(.system(.title2, weight: .bold))
                                 .foregroundColor(.black)
                                 .padding(.horizontal, 20)
                             Spacer()

@@ -37,7 +37,7 @@ struct SettingsView: View {
                                 NavigationLink(destination: ExercisesView()) {
                                     HStack {
                                         Text("Manage Exercises")
-                                            .font(.system(.title, weight: .bold))
+                                            .font(.system(.title2, weight: .bold))
                                             .foregroundColor(.black)
                                         Spacer()
                            
