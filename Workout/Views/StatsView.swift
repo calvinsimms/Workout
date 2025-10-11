@@ -17,15 +17,18 @@ struct StatsView: View {
         
                 
                 HStack {
+                    Spacer()
+                    
                     Text("Statistics")
-                        .font(.largeTitle)
+                        .font(.title)
                         .fontWeight(.bold)
                         .foregroundColor(.black)
+                    
                     Spacer()
                 }
                 .padding(.horizontal, 20)
-                .padding(.vertical, 20)
-                .padding(.top, 40)
+                .padding(.bottom, 20)
+                .padding(.top, 10)
 
                 Divider()
                 

@@ -32,14 +32,24 @@ struct ExercisesView: View {
                             }
                         }) {
                             Image(systemName: isEditing ? "checkmark" : "pencil")
-                                .font(.title)
+                                .font(.title2)
                                 .foregroundColor(.black)
                                 .padding(10)
                                 .background(Color("Button").opacity(0.9))
                                 .cornerRadius(30)
                                 .shadow(radius: 2)
+                                .padding(.bottom, 10)
                         }
                     }
+                    
+                    Spacer()
+                    
+                    Text("Exercises")
+                        .font(.title)
+                        .fontWeight(.bold)
+                        .foregroundColor(.black)
+                        .padding(.top, 10)
+                        .padding(.bottom, 20)
                     
                     Spacer()
                     
@@ -48,27 +58,17 @@ struct ExercisesView: View {
                         creatingExercise = true
                     }) {
                         Image(systemName: "plus")
-                            .font(.title)
+                            .font(.title2)
                             .foregroundColor(.black)
                             .padding(10)
                             .background(Color("Button").opacity(0.9))
                             .clipShape(Circle())
                             .shadow(radius: 2)
+                            .padding(.bottom, 10)
+
                     }
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 20)
-                
-                // MARK: - Header
-                HStack {
-                    Text("Exercises")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                        .foregroundColor(.black)
-                    Spacer()
-                }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 20)
                 
                 Divider()
                 

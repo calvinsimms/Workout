@@ -20,9 +20,7 @@ struct CreateWorkoutView: View {
         self._workout = workout
         self.isNewWorkout = isNewWorkout
         self.onSave = onSave
-
-        // Use the actual wrappedValue of Bindable<Workout>
-        let exercisesSet = Set(workout.wrappedValue.exercises) // assuming 'exercises' is Set<Exercise>
+        let exercisesSet = Set(workout.wrappedValue.exercises)
         _selectedExercises = State(initialValue: exercisesSet)
     }
 
@@ -30,6 +28,15 @@ struct CreateWorkoutView: View {
         Form {
             Section("Workout Name") {
                 TextField("Title", text: $workout.title)
+            }
+            
+            Section(header: Text("Category")) {
+                Picker("Category", selection: $workout.category) {
+                    ForEach(WorkoutCategory.allCases) { category in
+                        Text(category.rawValue).tag(category)
+                    }
+                }
+                .pickerStyle(.segmented)
             }
 
             Section("Exercises") {
@@ -59,7 +66,6 @@ struct CreateWorkoutView: View {
 
 
 #Preview {
-    // Create an in-memory model container for SwiftData previews
     let workout = Workout(title: "Example", exercises: [
         Exercise(name: "Squats"),
         Exercise(name: "Lunges")

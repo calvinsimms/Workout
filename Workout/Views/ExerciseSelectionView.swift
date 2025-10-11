@@ -8,6 +8,8 @@
 import SwiftUI
 import SwiftData
 
+
+
 struct ExerciseSelectionView: View {
     @Binding var selectedExercises: Set<Exercise>
     @Query(sort: \Exercise.name, order: .forward) private var allExercises: [Exercise]
@@ -32,9 +34,20 @@ struct ExerciseSelectionView: View {
                         .background(Color("Button").opacity(0.9))
                         .clipShape(Circle())
                         .shadow(radius: 2)
+                        .padding(.bottom, 10)
+
                     
                 }
-            
+                
+                Spacer()
+                
+                Text("Select Exercises")
+                    .font(.title)
+                    .fontWeight(.bold)
+                    .foregroundColor(.black)
+                    .padding(.bottom, 20)
+                    .padding(.top, 10)
+                
                 Spacer()
                 
                 Button(action: {
@@ -48,21 +61,12 @@ struct ExerciseSelectionView: View {
                         .background(Color("Button").opacity(0.9))
                         .clipShape(Circle())
                         .shadow(radius: 2)
+                        .padding(.bottom, 10)
+
                 }
             }
             .padding(.horizontal, 20)
             
-            
-            HStack {
-                Text("Select Exercises")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .foregroundColor(.black)
-                Spacer()
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 20)
-
             Divider()
             
             List(allExercises, id: \.id) { exercise in
@@ -117,3 +121,11 @@ struct ExerciseSelectionView: View {
         }
     }
 }
+
+#Preview {
+    @Previewable @State var selected: Set<Exercise> = []
+
+    ExerciseSelectionView(selectedExercises: $selected)
+}
+
+

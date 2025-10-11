@@ -199,6 +199,44 @@ struct CalendarView: View {
     var body: some View {
         VStack(spacing: 0) {
             
+            HStack {
+                Image(systemName: "pencil")
+                    .font(.title2)
+                    .foregroundColor(.black)
+                    .padding(10)
+                    .background((Color("Button").opacity(0.9)))
+                    .cornerRadius(30)
+                    .shadow(radius: 2)
+                    .padding(.bottom, 10)
+                
+                Spacer()
+                
+                Text("Calendar")
+                    .font(.title)
+                    .fontWeight(.bold)
+                    .foregroundColor(.black)
+                    .padding(.bottom, 20)
+                    .padding(.top, 10)
+                
+                Spacer()
+                
+                Button(action: {
+                    isAddExercisePresented = true
+                }) {
+                    Image(systemName: "plus")
+                        .font(.title2)
+                        .foregroundColor(.black)
+                        .padding(10)
+                        .background((Color("Button").opacity(0.9)))
+                        .cornerRadius(30)
+                        .shadow(radius: 2)
+                        .padding(.bottom, 10)
+                }
+            }
+            .padding(.horizontal, 20)
+            
+            Divider()
+            
             // MARK: - Custom Calendar
             CustomCalendarGrid(viewModel: calendarVM, selectedDate: $selectedDate)
             

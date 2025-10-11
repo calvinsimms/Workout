@@ -16,6 +16,7 @@ struct ContentView: View {
 
     @State private var selectedTab: String = "Workouts"
     @State private var didSeedExercises = false
+    @State private var isNavBarHidden = false
 
     var body: some View {
         ZStack {
@@ -25,7 +26,8 @@ struct ContentView: View {
                         workouts: workouts,
                         addWorkout: addWorkout,
                         deleteWorkouts: deleteWorkouts,
-                        moveWorkouts: moveWorkouts
+                        moveWorkouts: moveWorkouts,
+                        isNavBarHidden: $isNavBarHidden
                     )
                 }
             }
@@ -47,8 +49,10 @@ struct ContentView: View {
 
             VStack {
                 Spacer()
-                ButtonNavBar(selectedTab: $selectedTab)
-                    .padding(.bottom, 30)
+                if !isNavBarHidden {
+                    ButtonNavBar(selectedTab: $selectedTab)
+                        .padding(.bottom, 30)
+                }
             }
         }
         .edgesIgnoringSafeArea(.bottom)

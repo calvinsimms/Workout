@@ -18,15 +18,16 @@ struct SettingsView: View {
             
                     
                     HStack {
+                        Spacer()
                         Text("Settings")
-                            .font(.largeTitle)
+                            .font(.title)
                             .fontWeight(.bold)
                             .foregroundColor(.black)
                         Spacer()
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 20)
-                    .padding(.top, 40)
+                    .padding(.bottom, 20)
+                    .padding(.top, 10)
+
 
                     Divider()
                     
@@ -40,12 +41,49 @@ struct SettingsView: View {
                                             .font(.system(.title2, weight: .bold))
                                             .foregroundColor(.black)
                                         Spacer()
-                           
                                     }
+                                    
                                 }
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.vertical, 10)
+                                
+                                HStack {
+                                    Text("Appearance")
+                                        .font(.system(.title2, weight: .bold))
+                                        .foregroundColor(.black)
+                                    Spacer()
+                                }
+                            
+                                HStack {
+                                    Text("Units")
+                                        .font(.system(.title2, weight: .bold))
+                                        .foregroundColor(.black)
+                                    Spacer()
+                                }
+                            
+                                HStack {
+                                    Text("Prevent Screen Sleep")
+                                        .font(.system(.title2, weight: .bold))
+                                        .foregroundColor(.black)
+                                    Spacer()
+                                }
+                                
+                                HStack {
+                                    Text("Send Feedback")
+                                        .font(.system(.title2, weight: .bold))
+                                        .foregroundColor(.black)
+                                    Spacer()
+                                }
+                            
+                                HStack {
+                                    Text("Rate in AppStore")
+                                        .font(.system(.title2, weight: .bold))
+                                        .foregroundColor(.black)
+                                    Spacer()
+                                }
+                                
+                               
                             }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.vertical, 10)
                             .buttonStyle(PlainButtonStyle())
                             .listRowBackground(Color("Background"))
                         }

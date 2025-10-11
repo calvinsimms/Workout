@@ -15,14 +15,10 @@ struct WorkoutView: View {
     @State private var lapTime: TimeInterval = 0
     @State private var isRunning = false
     
+    @Binding var isNavBarHidden: Bool
+    
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(workout.title)
-                .font(.largeTitle)
-                .bold()
-                .padding(.horizontal, 20)
-                .padding(.vertical, 10)
-                .padding(.bottom, 10)
+        VStack(spacing: 0) {
             
             Divider()
             
@@ -31,15 +27,29 @@ struct WorkoutView: View {
                     .foregroundColor(.secondary)
                     .padding(.horizontal)
             } else {
-                List(workout.exercises, id: \.id) { exercise in
-                    Text(exercise.name)
-                        .font(.system(.title, weight: .bold))
-                        .padding(.vertical, 10)
-                        .buttonStyle(PlainButtonStyle())
+                List {
+                    ForEach(workout.exercises, id: \.id) { exercise in
+                        DisclosureGroup {
+                            VStack(alignment: .leading, spacing: 5) {
+                                Text("Sets: 3")
+                                Text("Reps: 10")
+                                Text("Weight: 135 lbs")
+                            }
+                        } label: {
+                            Text(exercise.name)
+                                .font(.system(.title2, weight: .bold))
+                                .padding(.vertical, 20)
+                                .padding(.horizontal, 10)
+                        }
                         .listRowBackground(Color("Background"))
+                        .listRowInsets(EdgeInsets(top: 0, leading: 5, bottom: 0, trailing: 0))
+
+                    }
                 }
                 .listStyle(.plain)
+                .padding(.trailing, 20)
                 
+
             }
             
             Spacer()
@@ -50,14 +60,8 @@ struct WorkoutView: View {
                         .font(.title)
                     
                     Spacer()
-                }
-                .padding(.horizontal, 20)
-                
-                HStack {
                     Text("Lap: \(timeFormatted(lapTime))")
                         .font(.title2)
-                    
-                    Spacer()
                 }
                 .padding(.horizontal, 20)
                 
@@ -99,7 +103,7 @@ struct WorkoutView: View {
                     .cornerRadius(30)
                 }
                 .padding(.horizontal, 20)
-                .padding(.bottom, 80)
+                
             }
             
         }
@@ -121,6 +125,12 @@ struct WorkoutView: View {
         }
         .onDisappear {
             timer?.invalidate()
+        }
+        .onAppear {
+           isNavBarHidden = true
+        }
+        .onDisappear {
+            isNavBarHidden = false
         }
     }
     
@@ -153,10 +163,12 @@ struct WorkoutView: View {
 }
 
 #Preview {
-    WorkoutView(workout: Workout(title: "Leg Day", exercises: [
-        Exercise(name: "Squats"),
-        Exercise(name: "Lunges")
-    ]))
+    WorkoutView(
+        workout: Workout(title: "Leg Day", exercises: [
+            Exercise(name: "Squats"),
+            Exercise(name: "Lunges")
+        ]),
+        isNavBarHidden: .constant(false) 
+    )
 }
-
 
