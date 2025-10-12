@@ -242,6 +242,7 @@ struct CalendarView: View {
             
             Divider()
         
+            
             List {
                 ForEach(eventsForSelectedDate) { event in
                     HStack {
@@ -251,25 +252,6 @@ struct CalendarView: View {
                     .padding(.vertical, 10)
                     .listRowBackground(Color("Background"))
                 }
-
-                // Static row for "Add Exercise"
-                Button(action: {
-                    isAddExercisePresented = true
-                }) {
-                    HStack {
-                        Text("Add Workout")
-                            .font(.system(.title2, weight: .bold))
-                            .padding(.vertical, 10)
-                            .foregroundColor(.black)
-                        
-                        Spacer()
-                        
-                        Image(systemName: "plus.circle.fill")
-                            .font(.title2)
-                            .foregroundColor(.black)
-                    }
-                }
-                .listRowBackground(Color("Background"))
             }
             .listStyle(.plain)
             .safeAreaInset(edge: .bottom) {
@@ -281,7 +263,7 @@ struct CalendarView: View {
         .colorScheme(.light)
         .ignoresSafeArea(edges: .bottom)
         .sheet(isPresented: $isAddExercisePresented) {
-            Text("Add Exercise View")
+            Text("Add Workouts View")
         }
     }
 }
