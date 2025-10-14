@@ -15,6 +15,8 @@ struct WorkoutView: View {
     @State private var lapTime: TimeInterval = 0
     @State private var isRunning = false
     @State private var lapHistory: [(number: Int, time: TimeInterval)] = []
+    @State private var notes: String = ""
+
 
     @Binding var isNavBarHidden: Bool
     
@@ -54,15 +56,8 @@ struct WorkoutView: View {
             Spacer()
             
             DisclosureGroup(isExpanded: $showTimer) {
+
                 VStack(spacing: 0) {
-                    
-//                    Text(timeFormatted(totalTime))
-//                        .font(.title.monospacedDigit())
-//                        .fontWeight(.bold)
-//                        .padding(10)
-//                    
-//                    Divider()
-                    
                     ScrollView {
                         VStack(alignment: .leading, spacing: 5) {
                             if isRunning || lapTime > 0 {
@@ -84,8 +79,6 @@ struct WorkoutView: View {
                                     Text(timeFormatted(lap.time))
                                         .monospacedDigit()
                                 }
-                                
-
                             }
                         }
                     }
@@ -93,9 +86,8 @@ struct WorkoutView: View {
                     .frame(height: 130)
                     .padding(.horizontal, 20)
                     
-                    
                     Divider()
-                        .padding(.bottom, 20)
+                        .padding(.bottom, 30)
                     
                     HStack(spacing: 30) {
                         Button((isRunning || totalTime == 0) ? "Lap" : "Reset") {
