@@ -7,30 +7,48 @@
 
 import SwiftUI
 
+// A view that displays a list of exercises, allows users to add, edit, delete, and reorder them.
+// Acts as the main exercise management screen.
 struct ExercisesView: View {
+    // MARK: - State Properties
+    
+    // Stores the list of exercises displayed in this view.
     @State private var exercises: [Exercise] = []
+    
+    // Controls whether the list is currently in editing mode (for delete/move actions).
     @State private var isEditing = false
+    
+    // Controls the environment edit mode state of the list.
     @State private var editMode: EditMode = .inactive
     
+    // Temporary `Exercise` instance used when creating a new exercise.
     @State private var newExercise = Exercise(name: "")
+    
+    // Controls whether the create exercise view is currently presented.
     @State private var creatingExercise = false
     
+    // Custom initializer allows passing an existing list of exercises (for previews or parent injection).
     init(exercises: [Exercise] = []) {
-          _exercises = State(initialValue: exercises)
-      }
+        _exercises = State(initialValue: exercises)
+    }
     
+    // MARK: - Body
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // MARK: - Top Buttons
+                
+                // MARK: - Top Bar
                 HStack {
+                    // Edit button appears only if the list is not empty
                     if !exercises.isEmpty {
                         Button(action: {
+                            // Toggle editing mode with animation
                             withAnimation {
                                 isEditing.toggle()
                                 editMode = isEditing ? .active : .inactive
                             }
                         }) {
+                            // Switches between "pencil" and "checkmark" icons
                             Image(systemName: isEditing ? "checkmark" : "pencil")
                                 .font(.title2)
                                 .foregroundColor(.black)
@@ -44,6 +62,7 @@ struct ExercisesView: View {
                     
                     Spacer()
                     
+                    // Main title
                     Text("Exercises")
                         .font(.title)
                         .fontWeight(.bold)
@@ -53,6 +72,7 @@ struct ExercisesView: View {
                     
                     Spacer()
                     
+                    // Plus button to create a new exercise
                     Button(action: {
                         newExercise = Exercise(name: "")
                         creatingExercise = true
@@ -65,16 +85,16 @@ struct ExercisesView: View {
                             .clipShape(Circle())
                             .shadow(radius: 2)
                             .padding(.bottom, 10)
-
                     }
                 }
                 .padding(.horizontal, 20)
                 
                 Divider()
                 
-                // MARK: - List
+                // MARK: - Exercise List
                 List {
                     ForEach($exercises) { $exercise in
+                        // Each exercise opens its detail/edit view
                         NavigationLink(value: exercise) {
                             HStack {
                                 Text(exercise.name)
@@ -84,13 +104,14 @@ struct ExercisesView: View {
                                 Spacer()
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            
                         }
                         .buttonStyle(PlainButtonStyle())
                         .listRowBackground(Color("Background"))
                         .listRowSeparatorTint(.gray)
                     }
+                    // Swipe to delete
                     .onDelete(perform: deleteExercise)
+                    // Drag to reorder
                     .onMove(perform: moveExercise)
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 20))
                 }
@@ -98,22 +119,27 @@ struct ExercisesView: View {
                 .environment(\.editMode, $editMode)
             }
             .background(Color("Background"))
+            
             // MARK: - Navigation Destinations
+            
+            // Opens CreateExerciseView for an existing exercise
             .navigationDestination(for: Exercise.self) { exercise in
                 if let index = exercises.firstIndex(where: { $0.id == exercise.id }) {
                     CreateExerciseView(
                         exercise: $exercises[index],
                         isNewExercise: false,
-                        onSave: nil
+                        onSave: nil // Save handled automatically on dismiss or navigation pop
                     )
                 }
             }
-            // MARK: - Create New Exercise Navigation
+            
+            // Opens CreateExerciseView for adding a new exercise
             .navigationDestination(isPresented: $creatingExercise) {
                 CreateExerciseView(
                     exercise: $newExercise,
                     isNewExercise: true,
                     onSave: {
+                        // Append the new exercise to the list
                         exercises.append(newExercise)
                     }
                 )
@@ -121,7 +147,10 @@ struct ExercisesView: View {
         }
     }
     
-    // MARK: - Actions
+    // MARK: - Helper Methods
+    
+    // Deletes exercises at specified offsets.
+    // Automatically exits edit mode if the list becomes empty.
     private func deleteExercise(at offsets: IndexSet) {
         exercises.remove(atOffsets: offsets)
         if exercises.isEmpty {
@@ -130,6 +159,7 @@ struct ExercisesView: View {
         }
     }
     
+    // Moves exercises from one position to another.
     private func moveExercise(from source: IndexSet, to destination: Int) {
         exercises.move(fromOffsets: source, toOffset: destination)
     }
@@ -144,4 +174,3 @@ struct ExercisesView: View {
         ]
     )
 }
-

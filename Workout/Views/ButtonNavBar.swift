@@ -8,8 +8,11 @@
 import SwiftUI
 
 struct ButtonNavBar: View {
+    // Binding variable to keep track of the currently selected tab
     @Binding var selectedTab: String
 
+    // Array of buttons to display in the navigation bar
+    // Each button is represented by a NavButton struct
     private let buttons: [NavButton] = [
         NavButton(label: "Workouts", systemImage: "list.bullet.rectangle"),
         NavButton(label: "Calendar", systemImage: "calendar"),
@@ -17,6 +20,8 @@ struct ButtonNavBar: View {
         NavButton(label: "Settings", systemImage: "gearshape")
     ]
     
+    // Struct representing a single button in the navigation bar
+    // Conforms to Identifiable so it can be used in ForEach
     struct NavButton: Identifiable {
         let id = UUID()
         let label: String
@@ -25,9 +30,11 @@ struct ButtonNavBar: View {
 
     var body: some View {
         HStack {
-            ForEach(buttons) { button in
+            ForEach(buttons) { button in // Loop through each NavButton
                 Button(action: {
+                    // When tapped, update the selected tab
                     selectedTab = button.label
+                    // Trigger light haptic feedback
                     hapticClunk()
                 }) {
                     VStack(spacing: 4) {
@@ -35,18 +42,21 @@ struct ButtonNavBar: View {
                             .resizable()
                             .scaledToFit()
                             .frame(height: 22)
+                            // Bold icon if selected, otherwise regular
                             .fontWeight(selectedTab == button.label ? .bold : .regular)
                             .foregroundColor(.black)
                         
                         Text(button.label)
                             .font(.caption)
+                            // Semi-bold text if selected, regular otherwise
                             .fontWeight(selectedTab == button.label ? .semibold : .regular)
                             .foregroundColor(.black)
                     }
-                    .frame(maxWidth: .infinity) 
+                    .frame(maxWidth: .infinity)
                 }
             }
         }
+        // Overall styling for the full HStack
         .padding(.vertical, 10)
         .padding(.horizontal, 20)
         .frame(maxWidth: 330)
@@ -57,14 +67,13 @@ struct ButtonNavBar: View {
         )
     }
 
+    // Helper function to trigger haptic feedback when a button is tapped
     private func hapticClunk() {
         let generator = UIImpactFeedbackGenerator(style: .light)
-        generator.impactOccurred()
+        generator.impactOccurred() // Trigger the haptic
     }
 }
 
 #Preview {
     ButtonNavBar(selectedTab: .constant("Workouts"))
-        .padding()
-        .background(Color.gray.opacity(0.2))
 }
