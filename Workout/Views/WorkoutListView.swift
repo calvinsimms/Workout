@@ -248,13 +248,13 @@ struct WorkoutListView: View {
             title: "Leg Day",          // Name of the workout
             order: 0,                  // Order for sorting purposes
             exercises: [],             // Empty list of exercises for simplicity
-            category: .weightlifting   // Workout category
+            category: .resistance   // Workout category
         ),
         Workout(
             title: "Push Day",
             order: 1,
             exercises: [],
-            category: .weightlifting
+            category: .resistance
         ),
         Workout(
             title: "Run",

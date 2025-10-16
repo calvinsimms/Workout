@@ -58,6 +58,13 @@ struct SettingsView: View {
                                         .foregroundColor(.black)
                                     Spacer()
                                 }
+                                
+                                HStack {
+                                    Text("Include RPE")
+                                        .font(.system(.title2, weight: .bold))
+                                        .foregroundColor(.black)
+                                    Spacer()
+                                }
                             
                                 HStack {
                                     Text("Prevent Screen Sleep")

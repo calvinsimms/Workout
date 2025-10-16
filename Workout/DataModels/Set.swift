@@ -1,0 +1,95 @@
+//
+//  Set.swift
+//  Workout
+//
+//  Created by Calvin Simms on 2025-10-16.
+//
+
+import Foundation
+import SwiftData
+
+// MARK: - SetType Enumeration
+/// Represents the type of workout set.
+/// Each case defines a distinct training style (e.g., lifting weights vs. cardio).
+/// Conforms to:
+/// - `String` (for readable raw values)
+/// - `CaseIterable` (to allow easy iteration through all types)
+/// - `Identifiable` (for use in SwiftUI Lists and Pickers)
+/// - `Codable` (to support serialization for persistence or export)
+enum SetType: String, CaseIterable, Identifiable, Codable {
+    case weightlifting = "Weightlifting"
+    case cardio = "Cardio"
+    case bodyweight = "Bodyweight"
+    
+    /// Required by `Identifiable`, used to uniquely identify each case.
+    /// Returns the case’s raw string value as its identifier.
+    var id: String { rawValue }
+}
+
+// MARK: - WorkoutSet Model
+/// A model representing a single exercise set within a workout.
+/// Each `WorkoutSet` stores performance data for one attempt at an exercise.
+/// Conforms to `@Model` to integrate with SwiftData’s persistence system.
+@Model
+final class WorkoutSet: Identifiable {
+    
+    // MARK: - Properties
+    
+    /// A unique identifier for each set, automatically assigned upon creation.
+    @Attribute(.unique) var id: UUID
+    
+    /// The category of this set (e.g., weightlifting, cardio, or bodyweight).
+    /// Uses the `SetType` enum for structured typing.
+    var type: SetType
+    
+    /// The date and time when this set was performed.
+    /// Defaults to the current date when a new set is created.
+    var date: Date
+    
+    /// The weight used for the set, if applicable (e.g., 135 lbs for squats).
+    /// `nil` for cardio or bodyweight exercises that do not involve external load.
+    var weight: Double?
+
+    var reps: Int?
+    
+    /// The perceived exertion for the set, often rated on a 1–10 RPE scale.
+    /// Allows tracking of workout intensity.
+    var rpe: Double?
+    
+    /// The duration of the set (in seconds, minutes, or a custom unit).
+    /// Useful for cardio activities like running or cycling.
+    var duration: Double?
+    
+    /// The distance covered during the set (e.g., kilometers or miles).
+    /// Typically used for cardio sets (e.g., a 5 km run).
+    var distance: Double?
+
+    // MARK: - Initializer
+    /// Initializes a new `WorkoutSet` with the provided details.
+    /// - Parameters:
+    ///   - type: The type of set (`SetType` enum).
+    ///   - date: The date performed (defaults to now).
+    ///   - weight: The weight lifted (optional).
+    ///   - reps: The number of repetitions (optional).
+    ///   - rpe: The rate of perceived exertion (optional).
+    ///   - duration: The duration of the exercise (optional).
+    ///   - distance: The distance covered (optional).
+    init(
+        type: SetType,
+        date: Date = Date(),
+        weight: Double? = nil,
+        reps: Int? = nil,
+        rpe: Double? = nil,
+        duration: Double? = nil,
+        distance: Double? = nil
+    ) {
+        self.id = UUID()
+        self.type = type
+        self.date = date
+        self.weight = weight
+        self.reps = reps
+        self.rpe = rpe
+        self.duration = duration
+        self.distance = distance
+    }
+}

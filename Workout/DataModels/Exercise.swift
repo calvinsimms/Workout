@@ -8,6 +8,32 @@
 import Foundation
 import SwiftData
 
+// MARK: - defining subcategories for exercises
+// these will fall into overall categories (resistance , cardio, and other)
+//enum subCategory: String, CaseIterable, Identifiable, Codable {
+//    
+//    // "Resistance Training" subcategories
+//    case chest: = "Chest"
+//    case back: = "Back"
+//    case biceps: = "Biceps"
+//    case triceps: = "Triceps"
+//    case shoulders: = "Shoulders"
+//    case legs: = "Legs"
+//    case abs: = "Abs"
+//    case otherWeightlifting: = "Other"
+//    
+//    // "Cardio" subcategories
+//    case running: = "Running"
+//    case cycling: = "Cycling"
+//    case swimming: = "Swimming"
+//    case otherCardio: = "Other"
+//
+//    // "Other" subcategories???
+//
+//    var id: String { rawValue }
+//    
+//}
+
 // Define a SwiftData model for a single Exercise
 @Model
 final class Exercise: Identifiable, Hashable {

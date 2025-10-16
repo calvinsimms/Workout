@@ -10,8 +10,8 @@ import SwiftUI
 struct HomeView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var workouts: [Workout] = [
-        Workout(title: "Leg Day", order: 0, category: .weightlifting),
-        Workout(title: "Push Day", order: 1, category: .weightlifting),
+        Workout(title: "Leg Day", order: 0, category: .resistance),
+        Workout(title: "Push Day", order: 1, category: .resistance),
         Workout(title: "Run", order: 2, category: .cardio),
         Workout(title: "Tennis", order: 3, category: .other)
     ]
