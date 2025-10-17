@@ -73,7 +73,8 @@ struct CreateWorkoutView: View {
             Section("Exercises") {
                 // Navigation link to a separate screen for selecting exercises.
                 NavigationLink("Select Exercises") {
-                    ExerciseSelectionView(selectedExercises: $selectedExercises)
+                    ExerciseSelectionView(selectedExercises: $selectedExercises,
+                                          workoutCategory: workout.category)
                 }
 
                 // Display the list of selected exercises.

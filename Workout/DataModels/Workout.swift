@@ -14,7 +14,7 @@ import SwiftData
 // This enum provides a way to classify workouts into distinct groups
 // Using an enum ensures type safety and prevents using arbitrary strings for categories.
 enum WorkoutCategory: String, CaseIterable, Identifiable, Codable {
-    case resistance = "Resistance Training"
+    case resistance = "Resistance"
     case cardio = "Cardio"
     case other = "Other"
 

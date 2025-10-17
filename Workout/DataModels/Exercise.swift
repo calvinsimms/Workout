@@ -10,48 +10,79 @@ import SwiftData
 
 // MARK: - defining subcategories for exercises
 // these will fall into overall categories (resistance , cardio, and other)
-//enum subCategory: String, CaseIterable, Identifiable, Codable {
-//    
-//    // "Resistance Training" subcategories
-//    case chest: = "Chest"
-//    case back: = "Back"
-//    case biceps: = "Biceps"
-//    case triceps: = "Triceps"
-//    case shoulders: = "Shoulders"
-//    case legs: = "Legs"
-//    case abs: = "Abs"
-//    case otherWeightlifting: = "Other"
-//    
-//    // "Cardio" subcategories
-//    case running: = "Running"
-//    case cycling: = "Cycling"
-//    case swimming: = "Swimming"
-//    case otherCardio: = "Other"
-//
-//    // "Other" subcategories???
-//
-//    var id: String { rawValue }
-//    
-//}
+enum SubCategory: String, CaseIterable, Identifiable, Codable {
+    
+    // "Resistance Training" subcategories
+    case chest = "Chest"
+    case back = "Back"
+    case legs = "Legs"
+    case biceps = "Biceps"
+    case triceps = "Triceps"
+    case shoulders = "Shoulders"
+    case abs = "Abs"
+    case otherResistance = "Other"
+    
+    // Provides a unique identifier for each subcategory case based on its raw string value.
+    // This allows the enum to conform to the `Identifiable` protocol, which is required
+    // for use in SwiftUI views such as `ForEach` and `List`.
+    var id: String { rawValue }
+
+    // Indicates which main workout category (e.g., Resistance, Cardio, or Other)
+    // this subcategory belongs to. Since all defined subcategories here represent
+    // types of resistance exercises, this property always returns `.resistance`.
+    // This helps determine which subcategories to display when filtering exercises
+    // by workout type.
+    var parentCategory: WorkoutCategory {
+        return .resistance
+    }
+
+    
+}
 
 // Define a SwiftData model for a single Exercise
 @Model
 final class Exercise: Identifiable, Hashable {
+    
     // Unique identifier for each Exercise instance to
-    // ensure no two Exercise objects have the same UUID in the database
+    // ensure no two Exercise objects have the same UUID in the database.
     @Attribute(.unique) var id: UUID
     
     // Name of the exercise, must also be unique to prevent
-    // duplicate exercises with the same name in the data store
+    // duplicate exercises with the same name in the data store.
     @Attribute(.unique) var name: String
     
-    // Initializer for creating a new Exercise
+    // Represents a more specific classification for resistance exercises
+    // (e.g., Chest, Legs, Back, etc.). Cardio and "Other" exercises may not
+    // require subcategories, so this property is optional.
+    var subCategory: SubCategory?
+    
+    // Stores the main workout category (Resistance, Cardio, or Other).
+    // Unlike `subCategory`, this property is required for all exercises.
+    // It ensures that cardio exercises can belong directly to the cardio
+    // category without needing a subcategory.
+    var category: WorkoutCategory
+
+    // MARK: - Initializer
+    // Creates a new Exercise instance with an optional subcategory.
+    // If a subcategory is provided, its parent category is automatically assigned.
+    // Otherwise, you can explicitly set the category (e.g., `.cardio`, `.other`).
+    //
     // - Parameters:
-    //   - id: Optional UUID. Defaults to a new UUID if not provided
-    //   - name: Name of the exercise
-    init(id: UUID = UUID(), name: String) {
+    //   - id: Optional UUID. Defaults to a new UUID if not provided.
+    //   - name: The exercise’s name.
+    //   - category: The parent category (Resistance, Cardio, or Other).
+    //   - subCategory: Optional resistance subcategory.
+    init(
+        id: UUID = UUID(),
+        name: String,
+        category: WorkoutCategory = .other,
+        subCategory: SubCategory? = nil
+    ) {
         self.id = id
         self.name = name
+        self.subCategory = subCategory
+        // Automatically use the subcategory’s parent if one exists
+        self.category = subCategory?.parentCategory ?? category
     }
     
     // MARK: - Hashable & Equatable Conformance

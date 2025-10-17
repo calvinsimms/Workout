@@ -140,39 +140,69 @@ struct ContentView: View {
     
     // MARK: - Seed Default Exercises
     // Populates the Exercise database with a predefined set of common exercises
-    // the first time the app runs. This ensures the user starts with data to work with.
+    // the first time the app runs. Each exercise is assigned a subcategory
+    // to enable filtering and organization by muscle group.
     private func seedDefaultExercisesIfNeeded() {
         guard !didSeedExercises else { return } // Already seeded during this session
         guard exercises.isEmpty else { return }  // Skip if user already has data
         
-        // List of preloaded exercises
-        let defaultExercises = [
-            Exercise(name: "Bench Press"),
-            Exercise(name: "Bench Press - Incline"),
-            Exercise(name: "Bench Press - Decline"),
-            Exercise(name: "Dumbbell Bench Press"),
-            Exercise(name: "Dumbbell Bench Press - Incline"),
-            Exercise(name: "Dumbbell Bench Press - Decline"),
-            Exercise(name: "Overhead Press"),
-            Exercise(name: "Dumbbell Overhead Press"),
-            Exercise(name: "Lateral Raise"),
-            Exercise(name: "Lateral Raise - Cable"),
-            Exercise(name: "Squats"),
-            Exercise(name: "Deadlifts"),
-            Exercise(name: "Pull-ups")
+        // MARK: Default Exercises
+        // A curated list of common resistance exercises with their respective subcategories.
+        // These will appear automatically grouped under their muscle group in the app.
+        let defaultExercises: [Exercise] = [
+            // Chest
+            Exercise(name: "Bench Press", subCategory: .chest),
+            Exercise(name: "Bench Press - Incline", subCategory: .chest),
+            Exercise(name: "Bench Press - Decline", subCategory: .chest),
+            Exercise(name: "Dumbbell Bench Press", subCategory: .chest),
+            Exercise(name: "Dumbbell Bench Press - Incline", subCategory: .chest),
+            Exercise(name: "Dumbbell Bench Press - Decline", subCategory: .chest),
+            
+            // Shoulders
+            Exercise(name: "Overhead Press", subCategory: .shoulders),
+            Exercise(name: "Dumbbell Overhead Press", subCategory: .shoulders),
+            Exercise(name: "Lateral Raise", subCategory: .shoulders),
+            Exercise(name: "Lateral Raise - Cable", subCategory: .shoulders),
+            
+            // Legs
+            Exercise(name: "Squats", subCategory: .legs),
+            Exercise(name: "Deadlifts", subCategory: .legs),
+            
+            // Back
+            Exercise(name: "Pull-ups", subCategory: .back),
+            Exercise(name: "Lat Pulldown", subCategory: .back),
+            Exercise(name: "Seated Row", subCategory: .back),
+            
+            // Biceps
+            Exercise(name: "Barbell Curl", subCategory: .biceps),
+            Exercise(name: "Dumbbell Curl", subCategory: .biceps),
+            
+            // Triceps
+            Exercise(name: "Tricep Pushdown", subCategory: .triceps),
+            Exercise(name: "Overhead Tricep Extension", subCategory: .triceps),
+            
+            // Abs
+            Exercise(name: "Crunches", subCategory: .abs),
+            Exercise(name: "Plank", subCategory: .abs),
+            
+            // Cardio
+            Exercise(name: "Running", category: .cardio),
+            Exercise(name: "Cycling", category: .cardio),
+            Exercise(name: "Rowing", category: .cardio)
         ]
         
+        // MARK: Insert & Save
         // Insert each default exercise into the database
         for exercise in defaultExercises {
             modelContext.insert(exercise)
         }
         
-        // Save to persist data
+        // Save to persist data in SwiftData
         do {
             try modelContext.save()
             didSeedExercises = true
         } catch {
-            print("Failed to seed default exercises: \(error)")
+            print("❌ Failed to seed default exercises: \(error)")
         }
     }
 }

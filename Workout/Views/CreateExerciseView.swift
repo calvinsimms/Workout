@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 // MARK: - CreateExerciseView
 // A reusable form view for creating or editing an Exercise object.
@@ -38,66 +39,174 @@ struct CreateExerciseView: View {
     // Gives access to SwiftData’s model context for saving or inserting objects.
     @Environment(\.modelContext) private var modelContext
     
+    // Fetches all existing exercises to check for duplicates before saving.
+    @Query(sort: \Exercise.name, order: .forward) private var existingExercises: [Exercise]
+    
+    // Controls whether the duplicate name alert is shown.
+    @State private var showingDuplicateAlert = false
+
+    
+    var defaultCategory: WorkoutCategory? = nil
+    
+    // Stores the currently selected category for this exercise.
+    // Defaults based on any existing subcategory or `.other` for new exercises.
+    @State private var selectedCategory: WorkoutCategory
+    
+    // Stores the selected subcategory when the exercise is of type Resistance.
+    @State private var selectedSubCategory: SubCategory?
+    
+    
+    // MARK: - Initializer
+    init(
+        exercise: Binding<Exercise>,
+        isNewExercise: Bool,
+        defaultCategory: WorkoutCategory? = nil,
+        onSave: (() -> Void)? = nil
+    ) {
+        self._exercise = exercise
+        self.isNewExercise = isNewExercise
+        self.defaultCategory = defaultCategory
+        self.onSave = onSave
+        
+        // Initialize category & subcategory intelligently
+        if let sub = exercise.wrappedValue.subCategory {
+            // If exercise already has a subcategory, derive category from it
+            _selectedCategory = State(initialValue: sub.parentCategory)
+            _selectedSubCategory = State(initialValue: sub)
+        } else if let defaultCategory {
+            // If parent workout provided a default category (e.g. from CreateWorkoutView)
+            _selectedCategory = State(initialValue: defaultCategory)
+            _selectedSubCategory = State(initialValue: nil)
+        } else {
+            // Otherwise fallback to resistance
+            _selectedCategory = State(initialValue: .resistance)
+            _selectedSubCategory = State(initialValue: nil)
+        }
+    }
+    
     
     // MARK: - Body
     var body: some View {
         Form {
+            
             // Exercise Name Input
             Section(header: Text("Exercise Name")) {
-                // Text field bound directly to the Exercise name
                 TextField("Name", text: $exercise.name)
+            }
+            
+            // Category Selection
+            Section(header: Text("Category")) {
+                // Picker with same segmented style used in CreateWorkoutView
+                Picker("Category", selection: $selectedCategory) {
+                    ForEach(WorkoutCategory.allCases) { category in
+                        Text(category.rawValue).tag(category)
+                    }
+                }
+                .pickerStyle(.segmented)
+            }
+            
+            // Subcategory Picker (only visible if Resistance is selected)
+            if selectedCategory == .resistance {
+                Section(header: Text("Subcategory")) {
+                    Picker("Subcategory", selection: Binding(
+                        get: { selectedSubCategory ?? .chest }, // default to Chest if nil
+                        set: { newValue in
+                            selectedSubCategory = newValue
+                            exercise.subCategory = newValue
+                        }
+                    )) {
+                        ForEach(SubCategory.allCases) { sub in
+                            Text(sub.rawValue).tag(sub)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                }
             }
         }
         
-        // Navigation Bar Title
-        // The title changes depending on whether a new exercise is being created
+        // MARK: - Navigation Title
         .navigationTitle(isNewExercise ? "New Exercise" : "Edit Exercise")
         
-        // Toolbar Buttons
+        // MARK: - Toolbar Buttons
         .toolbar {
             
             // Confirmation (Save) Button
             ToolbarItem(placement: .confirmationAction) {
                 Button("Save") {
-                    // If creating a brand-new exercise, insert into SwiftData context
+                    let trimmedName = exercise.name.trimmingCharacters(in: .whitespaces)
+                    
+                    // Duplicate check (same as before)
+                    let isDuplicate = existingExercises.contains {
+                        $0.name.lowercased() == trimmedName.lowercased() && $0.id != exercise.id
+                    }
+                    guard !isDuplicate else {
+                        showingDuplicateAlert = true
+                        return
+                    }
+                    
+                    // Reapply defaults before saving
+                    exercise.category = selectedCategory
+                    if selectedCategory == .resistance {
+                        exercise.subCategory = selectedSubCategory ?? .chest
+                    } else {
+                        exercise.subCategory = nil
+                    }
+                    
                     if isNewExercise {
                         modelContext.insert(exercise)
                     }
                     
-                    // Run optional onSave closure (used to refresh parent view)
                     onSave?()
-                    
-                    // Dismiss the current sheet or navigation
                     dismiss()
                 }
-                // Disable the save button if the name is empty or whitespace-only
+
+                .alert("Duplicate Exercise", isPresented: $showingDuplicateAlert) {
+                    Button("OK", role: .cancel) { }
+                } message: {
+                    Text("An exercise with this name already exists. Please choose a different name.")
+                }
                 .disabled(exercise.name.trimmingCharacters(in: .whitespaces).isEmpty)
+
             }
             
             // Cancel Button
             ToolbarItem(placement: .cancellationAction) {
                 Button("Cancel") {
-                    // Simply dismiss the view without saving
                     dismiss()
                 }
             }
         }
+        .onAppear {
+            // Ensure both are initialized before saving
+            exercise.category = selectedCategory
+            
+            if selectedCategory == .resistance {
+                // If no subcategory was chosen, default to Chest
+                if selectedSubCategory == nil {
+                    selectedSubCategory = .chest
+                }
+                exercise.subCategory = selectedSubCategory
+            } else {
+                exercise.subCategory = nil
+            }
+        }
+
     }
+    
 }
 
 
 // MARK: - Preview
 #Preview {
-    // Creates a sample Exercise instance for the preview
-    @Previewable @State var sampleExercise = Exercise(name: "Sample Exercise")
+    @Previewable @State var sampleExercise = Exercise(name: "Bench Press", subCategory: .chest)
     
-    // Demonstrates how CreateExerciseView would appear in a NavigationStack
-    // when creating a new exercise
-    return CreateExerciseView(
-        exercise: $sampleExercise, // Binding to a sample exercise
-        isNewExercise: true,       // Preview in "create new" mode
-        onSave: {
-            print("Exercise saved: \(sampleExercise.name)")
-        }
-    )
+    NavigationStack {
+        CreateExerciseView(
+            exercise: $sampleExercise,
+            isNewExercise: true,
+            onSave: {
+                print("Saved exercise: \(sampleExercise.name)")
+            }
+        )
+    }
 }

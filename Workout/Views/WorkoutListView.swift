@@ -23,6 +23,11 @@ struct WorkoutListView: View {
     // Temporary workout object for creating a new workout.
     @State private var newWorkout = Workout(title: "", order: 0, exercises: [])
     
+    // Tracks which workout categories are currently expanded in the list.
+    // Each `WorkoutCategory` in this set represents an open DisclosureGroup.
+    // Used to preserve expand/collapse state while navigating through workouts.
+    @State private var expandedCategories: Set<WorkoutCategory> = []
+    
     // MARK: - Input Data and Actions
     
     // The list of workouts to display.
@@ -111,10 +116,13 @@ struct WorkoutListView: View {
                         .font(.title3)
                         .fontWeight(.bold)
                         .foregroundColor(.black)
+                        .padding(.bottom, 15)
+                        .padding(.top, 10)
                 ) {
                     Text("No workouts planned today")
-                        .font(.system(.title2, weight: .bold))
                         .foregroundColor(.gray)
+                        .italic()
+                        .padding(.horizontal, 20)
                         .padding(.vertical, 10)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .listRowBackground(Color("Background"))
@@ -125,46 +133,82 @@ struct WorkoutListView: View {
                         .font(.title3)
                         .fontWeight(.bold)
                         .foregroundColor(.black)
+                        .padding(.bottom, 15)
                 ) {
-                }
-                
-                // Sections for each workout category
-                ForEach(WorkoutCategory.allCases) { category in
-                    Section(header: Text(category.rawValue)
-                        .font(.headline)
-                        .foregroundColor(.black)
-                    ) {
-                        // Filter workouts by category
-                        ForEach(workouts.filter { $0.category == category }) { workout in
-                            NavigationLink {
-                                WorkoutView(workout: workout, isNavBarHidden: $isNavBarHidden)
-                            } label: {
+                    
+                    // Sections for each workout category
+                    ForEach(WorkoutCategory.allCases) { category in
+                        DisclosureGroup(
+                            isExpanded: Binding(
+                                get: { expandedCategories.contains(category) },
+                                set: { isExpanded in
+                                    withAnimation {
+                                        if isExpanded {
+                                            expandedCategories.insert(category)
+                                        } else {
+                                            expandedCategories.remove(category)
+                                        }
+                                    }
+                                }
+                            )
+                        ) {
+                            let categoryWorkouts = workouts.filter { $0.category == category }
+                            
+                            if categoryWorkouts.isEmpty {
+                                // Show a placeholder row when there are no workouts in this category
                                 HStack {
-                                    Text(workout.title)
-                                        .font(.system(.title2, weight: .bold))
-                                        .foregroundColor(.black)
-                                        .padding(.horizontal, 20)
+                                    Text("No saved workouts")
+                                        .foregroundColor(.gray)
+                                        .italic()
+                                    
                                     Spacer()
                                 }
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(.vertical, 10)
+                                .listRowBackground(Color("Background"))
+                            } else {
+                                // Show the list of workouts for this category
+                                ForEach(categoryWorkouts) { workout in
+                                    NavigationLink {
+                                        WorkoutView(workout: workout, isNavBarHidden: $isNavBarHidden)
+                                    } label: {
+                                        HStack {
+                                            Text(workout.title)
+                                                .font(.system(.title2, weight: .bold))
+                                                .foregroundColor(.black)
+                                                .padding(.horizontal, 20)
+                                            Spacer()
+                                        }
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .padding(.vertical, 10)
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                    .listRowBackground(Color("Background"))
+                                    .listRowInsets(EdgeInsets(top: 10, leading: 0, bottom: 10, trailing: 0))
+                                }
+                                .onDelete { offsets in
+                                    deleteWorkoutsForCategory(offsets, category: category)
+                                }
+                                .onMove { source, destination in
+                                    moveWorkoutsForCategory(source, destination, category: category)
+                                }
                             }
-                            .buttonStyle(PlainButtonStyle())
-                            .listRowBackground(Color("Background"))
-                            .listRowInsets(EdgeInsets(top: 10, leading: 0, bottom: 10, trailing: 0))
+                        } label: {
+                            Text(category.rawValue)
+                                .font(.title2.bold())
+                                .foregroundColor(.black)
+                                .padding(.vertical, 10)
                         }
-                        // Enable swipe-to-delete for this category
-                        .onDelete { offsets in
-                            deleteWorkoutsForCategory(offsets, category: category)
-                        }
-                        // Enable drag-to-reorder for this category
-                        .onMove { source, destination in
-                            moveWorkoutsForCategory(source, destination, category: category)
-                        }
+                        .listRowBackground(Color("Background"))
+                        .tint(.black)
+                        .padding(.leading, 20)
+
                     }
                 }
+
             }
             .listStyle(GroupedListStyle())
+            .listSectionSpacing(.compact)
             .scrollContentBackground(.hidden)
             .environment(\.editMode, editMode)
             .safeAreaInset(edge: .bottom) {

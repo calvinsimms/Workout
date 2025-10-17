@@ -228,7 +228,7 @@ struct WorkoutView: View {
             let startDate = Date() - totalTime
             
             // Schedule a repeating timer to update every 0.01 seconds.
-            timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
+            timer = Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) { _ in
                 // Calculate elapsed time from the adjusted startDate.
                 let elapsed = Date().timeIntervalSince(startDate)
                 
