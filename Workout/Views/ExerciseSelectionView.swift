@@ -39,11 +39,17 @@ struct ExerciseSelectionView: View {
     // Used to control the expand/collapse state of each subcategory section dynamically,
     // so that the UI remembers which groups the user has expanded while browsing exercises.
     @State private var expandedGroups: Set<SubCategory> = []
+    
+    // For animating the Confirm button when the page loads
+    @State private var showConfirmButton = false
 
     // The workout category that determines which exercises should be shown.
     // Passed from the parent view (e.g., CreateWorkoutView) so that only
     // exercises matching this type (Resistance, Cardio, or Other) appear in the list.
     var workoutCategory: WorkoutCategory
+    
+    /// Binding to control visibility of the parent navigation bar.
+    @Binding var isNavBarHidden: Bool
 
     // Computed property that filters all stored exercises based on the selected
     // workout category. This ensures the user only sees relevant exercises
@@ -161,10 +167,9 @@ struct ExerciseSelectionView: View {
             .safeAreaInset(edge: .bottom) {
                 VStack {
                     Button(action: {
-                        // Same functionality as the checkmark
                         dismiss()
                     }) {
-                        Text("Confirm Selection")
+                        Text("Confirm & Go Back")
                             .font(.title2)
                             .fontWeight(.bold)
                             .foregroundColor(.black)
@@ -177,13 +182,24 @@ struct ExerciseSelectionView: View {
                             )
                     }
                     .padding(.horizontal, 30)
-                    .padding(.bottom, 80)
+                    .offset(y: showConfirmButton ? 0 : 100)
+                    .opacity(showConfirmButton ? 1 : 0)
+                    .animation(.spring(response: 0.5, dampingFraction: 0.8), value: showConfirmButton)
+                }
+                .onAppear {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                        showConfirmButton = true
+                    }
                 }
                 .background(Color(.clear).ignoresSafeArea())
             }
-
-
             
+        }
+        .onAppear {
+            isNavBarHidden = true
+        }
+        .onDisappear {
+            isNavBarHidden = false
         }
         // Background & Navigation Customization
         .background(Color("Background"))
@@ -249,7 +265,14 @@ struct ExerciseSelectionView: View {
 
 #Preview {
     @Previewable @State var selected: Set<Exercise> = []
-    ExerciseSelectionView(selectedExercises: $selected, workoutCategory: .resistance)
+    @Previewable @State var isNavBarHidden = true
+
+    ExerciseSelectionView(
+        selectedExercises: $selected,
+        workoutCategory: .resistance,
+        isNavBarHidden: $isNavBarHidden
+    )
+    .modelContainer(for: [Exercise.self], inMemory: true)
 }
 
 

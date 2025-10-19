@@ -46,57 +46,48 @@ struct ContentView: View {
     
     // MARK: - Body
     var body: some View {
-        ZStack {
-            
-            // MARK: - Tab Navigation Handling
-            // Switches between different views based on the selected tab
-            if selectedTab == "Workouts" {
-                NavigationStack {
-                    WorkoutListView(
-                        workouts: workouts,                // Pass current workouts from SwiftData
-                        addWorkout: addWorkout,            // Pass function to add new workouts
-                        deleteWorkouts: deleteWorkouts,    // Pass function to delete workouts
-                        moveWorkouts: moveWorkouts,        // Pass function to reorder workouts
-                        isNavBarHidden: $isNavBarHidden    // Bind nav bar visibility to subviews
-                    )
-                }
-            }
-            else if selectedTab == "Calendar" {
-                NavigationStack {
-                    CalendarView()
-                }
-            }
-            else if selectedTab == "Statistics" {
-                NavigationStack {
-                    StatsView()
-                }
-            }
-            else if selectedTab == "Settings" {
-                NavigationStack {
-                    SettingsView()
-                }
-            }
-            
-            
-            // MARK: Custom Navigation Bar
-            VStack {
-                Spacer()
-                
-                // Only show nav bar if not hidden
-                if !isNavBarHidden {
-                    ButtonNavBar(selectedTab: $selectedTab)
-                        .padding(.bottom, 30)
-                }
-            }
-        }
-        .edgesIgnoringSafeArea(.bottom)
-        
-        // Runs once when the view first appears
-        .onAppear {
-            seedDefaultExercisesIfNeeded()
-        }
-    }
-    
+           NavigationStack {
+               ZStack(alignment: .bottom) {
+                   // MARK: - Main Tab Views
+                   switch selectedTab {
+                   case "Workouts":
+                       WorkoutListView(
+                           workouts: workouts,
+                           addWorkout: addWorkout,
+                           deleteWorkouts: deleteWorkouts,
+                           moveWorkouts: moveWorkouts,
+                           isNavBarHidden: $isNavBarHidden
+                       )
+
+                   case "Calendar":
+                       CalendarView()
+
+                   case "Statistics":
+                       StatsView()
+
+                   case "Settings":
+                       SettingsView()
+
+                   default:
+                       EmptyView()
+                   }
+
+                   // MARK: - Custom Nav Bar (now inside the same stack)
+                   if !isNavBarHidden {
+                       ButtonNavBar(selectedTab: $selectedTab)
+                           .transition(
+                               .move(edge: .bottom)
+                               .combined(with: .opacity)
+                           )
+                           .animation(.easeInOut, value: isNavBarHidden)
+                   }
+               }
+               .background(Color("Background").ignoresSafeArea())
+               .onAppear {
+                   seedDefaultExercisesIfNeeded()
+               }
+           }
+       }
     
     // MARK: - Data Management Methods
     

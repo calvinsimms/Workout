@@ -20,6 +20,9 @@ struct CreateWorkoutView: View {
     // Whether this view is creating a new workout or editing an existing one.
     var isNewWorkout: Bool
     
+    /// Binding to control visibility of the parent navigation bar.
+    @Binding var isNavBarHidden: Bool
+    
     // A callback closure executed when the user taps "Save".
     // Useful for parent views to handle the saved workout.
     var onSave: ((Workout) -> Void)?
@@ -37,17 +40,17 @@ struct CreateWorkoutView: View {
     // - Parameters:
     //   - workout: A bindable instance of a Workout model.
     //   - isNewWorkout: Indicates whether this is a new workout being created.
+    //   - isNavBarHidden: A binding that controls the visibility of the parent’s navigation bar.
+    //                     When this view appears, it sets the binding to `true` to hide the bar,
+    //                     and resets it to `false` when dismissed, ensuring consistent UI behavior.
     //   - onSave: Optional closure to handle the save action.
-    init(workout: Bindable<Workout>, isNewWorkout: Bool, onSave: ((Workout) -> Void)? = nil) {
-        self._workout = workout
-        self.isNewWorkout = isNewWorkout
-        self.onSave = onSave
-        
-        // Convert the workout’s existing exercises into a Set
-        // so we can track selection without duplicates.
-        let exercisesSet = Set(workout.wrappedValue.exercises)
-        _selectedExercises = State(initialValue: exercisesSet)
-    }
+    init(workout: Workout, isNewWorkout: Bool, isNavBarHidden: Binding<Bool>, onSave: ((Workout) -> Void)? = nil) {
+         self._workout = Bindable(workout)
+         self.isNewWorkout = isNewWorkout
+         self._isNavBarHidden = isNavBarHidden
+         self.onSave = onSave
+         _selectedExercises = State(initialValue: Set(workout.exercises))
+     }
     
     // MARK: - Body
     
@@ -74,7 +77,8 @@ struct CreateWorkoutView: View {
                 // Navigation link to a separate screen for selecting exercises.
                 NavigationLink("Select Exercises") {
                     ExerciseSelectionView(selectedExercises: $selectedExercises,
-                                          workoutCategory: workout.category)
+                                          workoutCategory: workout.category,
+                                          isNavBarHidden: $isNavBarHidden)
                 }
 
                 // Display the list of selected exercises.
@@ -104,18 +108,37 @@ struct CreateWorkoutView: View {
                 .disabled(workout.title.trimmingCharacters(in: .whitespaces).isEmpty)
             }
         }
+        .onAppear {
+            // Slight delay ensures nav push begins before hiding bar
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    isNavBarHidden = true
+                }
+            }
+        }
+        .onDisappear {
+            withAnimation(.easeInOut(duration: 0.3)) {
+                isNavBarHidden = false
+            }
+        }
     }
 }
 
 #Preview {
-    let workout = Workout(title: "Example", exercises: [
-        Exercise(name: "Squats"),
-        Exercise(name: "Lunges")
-    ])
-    
-    // Create a Bindable wrapper for preview usage.
-    CreateWorkoutView(workout: Bindable(workout), isNewWorkout: true)
-        // Use an in-memory model container for preview/testing.
-        .modelContainer(for: [Workout.self, Exercise.self], inMemory: true)
-}
+    @Previewable @State var isNavBarHidden = false
 
+    let workout = Workout(
+        title: "Example",
+        exercises: [
+            Exercise(name: "Squats"),
+            Exercise(name: "Lunges")
+        ]
+    )
+
+    CreateWorkoutView(
+        workout: workout,          
+        isNewWorkout: true,
+        isNavBarHidden: $isNavBarHidden
+    )
+    .modelContainer(for: [Workout.self, Exercise.self], inMemory: true)
+}

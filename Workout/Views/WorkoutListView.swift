@@ -86,8 +86,9 @@ struct WorkoutListView: View {
                 // Button to create a new workout
                 NavigationLink(
                     destination: CreateWorkoutView(
-                        workout: Bindable(newWorkout),
+                        workout: newWorkout,
                         isNewWorkout: true,
+                        isNavBarHidden: $isNavBarHidden,
                         onSave: { workout in
                             addWorkout(workout)
                             newWorkout = Workout(title: "", order: 0, exercises: [])

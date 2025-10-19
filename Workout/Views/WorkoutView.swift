@@ -199,18 +199,24 @@ struct WorkoutView: View {
         // Navigate to workout editing view
         .navigationDestination(isPresented: $isEditing) {
             CreateWorkoutView(
-                workout: $workout,
-                isNewWorkout: false
+                workout: workout,        
+                isNewWorkout: false,
+                isNavBarHidden: $isNavBarHidden
             )
         }
-        // Hide navigation bar when view appears
         .onAppear {
-            isNavBarHidden = true
+            // Slight delay ensures nav push begins before hiding bar
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    isNavBarHidden = true
+                }
+            }
         }
-        // Clean up timer when leaving view and restore nav bar
         .onDisappear {
             timer?.invalidate()
-            isNavBarHidden = false
+            withAnimation(.easeInOut(duration: 0.3)) {
+                isNavBarHidden = false
+            }
         }
     }
     

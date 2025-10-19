@@ -87,6 +87,12 @@ struct SettingsView: View {
                                     Spacer()
                                 }
                                 
+                                HStack {
+                                    Text("Reset Defaults")
+                                        .font(.system(.title2, weight: .bold))
+                                        .foregroundColor(.black)
+                                    Spacer()
+                                }
                                
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
