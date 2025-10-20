@@ -185,7 +185,9 @@ struct WorkoutListView: View {
                                     }
                                     .buttonStyle(PlainButtonStyle())
                                     .listRowBackground(Color("Background"))
-                                    .listRowInsets(EdgeInsets(top: 10, leading: 0, bottom: 10, trailing: 0))
+                                    .listRowInsets(EdgeInsets(top: 10, leading: 0, bottom: 10, trailing: 15))
+                                    .tint(.black)
+                                    
                                 }
                                 .onDelete { offsets in
                                     deleteWorkoutsForCategory(offsets, category: category)
@@ -200,7 +202,7 @@ struct WorkoutListView: View {
                                 .foregroundColor(.black)
                                 .padding(.vertical, 10)
                         }
-                        .listRowBackground(Color("Background"))
+                        .listRowBackground(Color("Button"))
                         .tint(.black)
                         .padding(.leading, 20)
 
@@ -252,33 +254,41 @@ struct WorkoutListView: View {
             editMode?.wrappedValue = .inactive
         }
     }
-
-    // Reorders workouts within a specific category while preserving the order of other categories.
-    // This is necessary to maintain sectioned ordering while supporting drag-and-drop.
+    
+    // Handles reordering of workouts within a specific category.
+    //
+    // Converts the local (category-specific) drag indices provided by SwiftUI’s `.onMove`
+    // into global indices that correspond to positions in the full `workouts` array.
+    // This allows the parent `moveWorkouts` closure to correctly update the SwiftData model.
+    //
+    // - Parameters:
+    //   - source: The set of indices (relative to the category section) representing the moved items.
+    //   - destination: The target index (relative to the category section) where the items are dropped.
+    //   - category: The workout category being reordered.
     private func moveWorkoutsForCategory(_ source: IndexSet, _ destination: Int, category: WorkoutCategory) {
         
-        // 1. Filter workouts to only include the ones in the specified category.
-        var categoryWorkouts = workouts.filter { $0.category == category }
+        // 1. Identify the global indices for all workouts within this category.
+        //    These represent the positions of the category’s items in the full workouts array.
+        let globalIndices = workouts.enumerated()
+            .filter { $0.element.category == category }
+            .map { $0.offset }
         
-        // 2. Reorder the category-specific workouts using SwiftUI's IndexSet move operation.
-        categoryWorkouts.move(fromOffsets: source, toOffset: destination)
+        // 2. Convert the local (category) source indices into their corresponding global indices.
+        let globalSource = IndexSet(source.map { globalIndices[$0] })
         
-        // 3. Reconstruct the full workouts array with updated category order.
-        //    For all categories, append the reordered workouts for the moved category,
-        //    and keep the original order for other categories.
-        var reordered: [Workout] = []
-        for cat in WorkoutCategory.allCases {
-            if cat == category {
-                reordered.append(contentsOf: categoryWorkouts)
-            } else {
-                reordered.append(contentsOf: workouts.filter { $0.category == cat })
-            }
+        // 3. Determine the global destination index.
+        //    If the drop is within the category bounds, map directly;
+        //    otherwise, place after the last item in this category.
+        let globalDestination: Int
+        if destination < globalIndices.count {
+            globalDestination = globalIndices[destination]
+        } else {
+            globalDestination = globalIndices.last! + 1
         }
         
-        // 4. Note:
-        //    Currently, `reordered` is only a local variable and does not update the state or binding.
-        //    To make this functional, you would need to call a state updater or the parent closure
-        //    like `moveWorkouts(IndexSet(...), destination)` with the new order.
+        // 4. Delegate the move to the parent closure.
+        //    This updates the persisted SwiftData model and reassigns workout order values.
+        moveWorkouts(globalSource, globalDestination)
     }
 
 }
