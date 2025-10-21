@@ -22,7 +22,7 @@ A SwiftUI-based **Workout Tracker** app using **SwiftData** for managing workout
 
 **Calendar**
 
-* Calendar view using `UICalendarView` via UIKit integration
+* Calendar view using a custom built calendar
 * Display sample events on calendar
 * Select dates and view associated events
 
@@ -30,6 +30,7 @@ A SwiftUI-based **Workout Tracker** app using **SwiftData** for managing workout
 
 * Navigate to “Manage Exercises” (stubbed view)
 * Basic layout and navigation ready
+* List placeholders for future settings
 
 **Misc**
 
@@ -47,6 +48,7 @@ A SwiftUI-based **Workout Tracker** app using **SwiftData** for managing workout
 ## Planned Features
 
 * Sync workouts and events across devices (iCloud / CoreData persistent storage)
+* Share workouts with other users
 * Export and import workouts
 * Notifications for scheduled workouts
 * Enhanced UI/UX for statistics and progress visualization
