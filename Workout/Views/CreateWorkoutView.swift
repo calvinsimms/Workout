@@ -23,6 +23,9 @@ struct CreateWorkoutView: View {
     /// Binding to control visibility of the parent navigation bar.
     @Binding var isNavBarHidden: Bool
     
+    // Let's "Add ____ Workout" in WorkoutListView pass the category to this view 
+    var workoutCategory: WorkoutCategory
+    
     // A callback closure executed when the user taps "Save".
     // Useful for parent views to handle the saved workout.
     var onSave: ((Workout) -> Void)?
@@ -44,10 +47,11 @@ struct CreateWorkoutView: View {
     //                     When this view appears, it sets the binding to `true` to hide the bar,
     //                     and resets it to `false` when dismissed, ensuring consistent UI behavior.
     //   - onSave: Optional closure to handle the save action.
-    init(workout: Workout, isNewWorkout: Bool, isNavBarHidden: Binding<Bool>, onSave: ((Workout) -> Void)? = nil) {
+    init(workout: Workout, isNewWorkout: Bool, isNavBarHidden: Binding<Bool>, workoutCategory: WorkoutCategory = .resistance, onSave: ((Workout) -> Void)? = nil) {
          self._workout = Bindable(workout)
          self.isNewWorkout = isNewWorkout
          self._isNavBarHidden = isNavBarHidden
+         self.workoutCategory = workoutCategory
          self.onSave = onSave
          _selectedExercises = State(initialValue: Set(workout.exercises))
      }
@@ -70,6 +74,19 @@ struct CreateWorkoutView: View {
                     }
                 }
                 .pickerStyle(.segmented)
+                .disabled(!selectedExercises.isEmpty) // disable if any exercises are added
+                
+
+                   if !selectedExercises.isEmpty {
+                       HStack {
+                           Spacer ()
+                           Text("Category locked - remove exercises to change")
+                               .font(.footnote)
+                               .foregroundColor(.gray)
+                           Spacer()
+                       }
+                           
+                   }
             }
 
             // Exercises Section

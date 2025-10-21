@@ -89,6 +89,7 @@ struct WorkoutListView: View {
                         workout: newWorkout,
                         isNewWorkout: true,
                         isNavBarHidden: $isNavBarHidden,
+                        workoutCategory: .resistance,
                         onSave: { workout in
                             addWorkout(workout)
                             newWorkout = Workout(title: "", order: 0, exercises: [])
@@ -114,7 +115,7 @@ struct WorkoutListView: View {
                 
                 // Section for today's planned workouts
                 Section(header: Text("Today's Workouts")
-                        .font(.title3)
+                        .font(.title2)
                         .fontWeight(.bold)
                         .foregroundColor(.black)
                         .padding(.bottom, 15)
@@ -131,7 +132,7 @@ struct WorkoutListView: View {
                 
                 // Section for saved workouts (currently empty, can be expanded)
                 Section(header: Text("Saved Workouts")
-                        .font(.title3)
+                        .font(.title2)
                         .fontWeight(.bold)
                         .foregroundColor(.black)
                         .padding(.bottom, 15)
@@ -154,55 +155,68 @@ struct WorkoutListView: View {
                             )
                         ) {
                             let categoryWorkouts = workouts.filter { $0.category == category }
-                            
-                            if categoryWorkouts.isEmpty {
-                                // Show a placeholder row when there are no workouts in this category
-                                HStack {
-                                    Text("No saved workouts")
-                                        .foregroundColor(.gray)
-                                        .italic()
-                                    
-                                    Spacer()
-                                }
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.vertical, 10)
-                                .listRowBackground(Color("Background"))
-                            } else {
-                                // Show the list of workouts for this category
-                                ForEach(categoryWorkouts) { workout in
-                                    NavigationLink {
-                                        WorkoutView(workout: workout, isNavBarHidden: $isNavBarHidden)
-                                    } label: {
-                                        HStack {
-                                            Text(workout.title)
-                                                .font(.system(.title2, weight: .bold))
-                                                .foregroundColor(.black)
-                                                .padding(.horizontal, 20)
-                                            Spacer()
-                                        }
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                        .padding(.vertical, 10)
+                        
+                            // Show the list of workouts for this category
+                            ForEach(categoryWorkouts) { workout in
+                                NavigationLink {
+                                    WorkoutView(workout: workout, isNavBarHidden: $isNavBarHidden)
+                                } label: {
+                                    HStack {
+                                        Text(workout.title)
+                                            .font(.title3.bold())
+                                            .foregroundColor(.black)
+                                            .padding(.horizontal, 20)
+                                        Spacer()
                                     }
-                                    .buttonStyle(PlainButtonStyle())
-                                    .listRowBackground(Color("Background"))
-                                    .listRowInsets(EdgeInsets(top: 10, leading: 0, bottom: 10, trailing: 15))
-                                    .tint(.black)
-                                    
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.vertical, 10)
                                 }
-                                .onDelete { offsets in
-                                    deleteWorkoutsForCategory(offsets, category: category)
-                                }
-                                .onMove { source, destination in
-                                    moveWorkoutsForCategory(source, destination, category: category)
-                                }
+                                .buttonStyle(PlainButtonStyle())
+                                .listRowBackground(Color("Background"))
+                                .listRowInsets(EdgeInsets(top: 10, leading: 0, bottom: 10, trailing: 15))
+                                .tint(.black)
+                                
                             }
+                            .onDelete { offsets in
+                                deleteWorkoutsForCategory(offsets, category: category)
+                            }
+                            .onMove { source, destination in
+                                moveWorkoutsForCategory(source, destination, category: category)
+                            }
+                            
+                            NavigationLink(
+                               destination: CreateWorkoutView(
+                                   workout: Workout(title: "", order: 0, exercises: [], category: category),
+                                   isNewWorkout: true,
+                                   isNavBarHidden: $isNavBarHidden,
+                                   workoutCategory: category,
+                                   onSave: { workout in
+                                       addWorkout(workout)
+                                       newWorkout = Workout(title: "", order: 0, exercises: [])
+                                   }
+                               )
+                           ) {
+                               HStack {
+                                   Image(systemName: "plus.circle.fill")
+
+                                   Text("Add \(category.rawValue.capitalized) Workout")
+                                       .font(.title3)
+                                       .fontWeight(.semibold)
+                                       .foregroundColor(.black)
+                                       .padding(.vertical, 10)
+                               }
+                         
+                           }
+                           .listRowBackground(Color("Background"))
+
+                            
                         } label: {
                             Text(category.rawValue)
-                                .font(.title2.bold())
+                                .font(.title3.bold())
                                 .foregroundColor(.black)
                                 .padding(.vertical, 10)
                         }
-                        .listRowBackground(Color("Button"))
+                        .listRowBackground(Color("Background"))
                         .tint(.black)
                         .padding(.leading, 20)
 
@@ -316,13 +330,13 @@ struct WorkoutListView: View {
             order: 2,
             exercises: [],
             category: .cardio
-        ),
-        Workout(
-            title: "Tennis",
-            order: 3,
-            exercises: [],
-            category: .other
         )
+//        Workout(
+//            title: "Tennis",
+//            order: 3,
+//            exercises: [],
+//            category: .other
+//        )
     ]
 
     // MARK: - WorkoutListView Preview

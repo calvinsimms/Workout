@@ -38,8 +38,7 @@ struct SettingsView: View {
                                 NavigationLink(destination: ExercisesView()) {
                                     HStack {
                                         Text("Manage Exercises")
-                                            .font(.system(.title2, weight: .bold))
-                                            .foregroundColor(.black)
+
                                         Spacer()
                                     }
                                     
@@ -47,50 +46,43 @@ struct SettingsView: View {
                                 
                                 HStack {
                                     Text("Appearance")
-                                        .font(.system(.title2, weight: .bold))
-                                        .foregroundColor(.black)
+                                        
                                     Spacer()
                                 }
                             
                                 HStack {
                                     Text("Units")
-                                        .font(.system(.title2, weight: .bold))
-                                        .foregroundColor(.black)
+                                        
                                     Spacer()
                                 }
                                 
                                 HStack {
                                     Text("Include RPE")
-                                        .font(.system(.title2, weight: .bold))
-                                        .foregroundColor(.black)
+                                        
                                     Spacer()
                                 }
                             
                                 HStack {
                                     Text("Prevent Screen Sleep")
-                                        .font(.system(.title2, weight: .bold))
-                                        .foregroundColor(.black)
+                                        
                                     Spacer()
                                 }
                                 
                                 HStack {
                                     Text("Send Feedback")
-                                        .font(.system(.title2, weight: .bold))
-                                        .foregroundColor(.black)
+                                        
                                     Spacer()
                                 }
                             
                                 HStack {
                                     Text("Rate in AppStore")
-                                        .font(.system(.title2, weight: .bold))
-                                        .foregroundColor(.black)
+                                        
                                     Spacer()
                                 }
                                 
                                 HStack {
                                     Text("Reset Defaults")
-                                        .font(.system(.title2, weight: .bold))
-                                        .foregroundColor(.black)
+                                        
                                     Spacer()
                                 }
                                
@@ -100,7 +92,9 @@ struct SettingsView: View {
                             .buttonStyle(PlainButtonStyle())
                             .listRowBackground(Color("Background"))
                         }
-                        
+                        .font(.system(.title3, weight: .semibold))
+                        .foregroundColor(.black)
+                        .tint(.black)
                         .listStyle(.plain)
                         .scrollContentBackground(.hidden)
                         .background(Color("Background"))

@@ -67,7 +67,7 @@ struct WorkoutView: View {
                         } label: {
                             // Exercise name displayed prominently.
                             Text(exercise.name)
-                                .font(.system(.title2, weight: .bold))
+                                .font(.system(.title3, weight: .semibold))
                                 .padding(.vertical, 20)
                                 .padding(.horizontal, 10)
                         }

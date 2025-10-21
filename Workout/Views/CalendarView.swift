@@ -388,11 +388,25 @@ struct CalendarView: View {
                     HStack {
                         Text(event.title)
                     }
-                    .font(.system(.title2, weight: .bold))
+                    .font(.system(.title3, weight: .semibold))
                     .padding(.vertical, 10)
-                    // Custom background color for list rows
                     .listRowBackground(Color("Background"))
                 }
+                Button(action: {
+                    isAddExercisePresented = true
+                }) {
+                    HStack {
+                        Image(systemName: "plus.circle.fill")
+                        
+                        Text("Add Workout")
+                            .font(.title3)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.black)
+                            .padding(.vertical, 10)
+                    }
+                }
+                .listRowBackground(Color("Background"))
+            
             }
             .listStyle(.plain)
             .safeAreaInset(edge: .bottom) {
