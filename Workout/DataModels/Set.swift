@@ -50,6 +50,7 @@ final class WorkoutSet: Identifiable {
     /// `nil` for cardio or bodyweight exercises that do not involve external load.
     var weight: Double?
 
+    /// The amount of repititions performed
     var reps: Int?
     
     /// The perceived exertion for the set, often rated on a 1–10 RPE scale.
@@ -63,6 +64,12 @@ final class WorkoutSet: Identifiable {
     /// The distance covered during the set (e.g., kilometers or miles).
     /// Typically used for cardio sets (e.g., a 5 km run).
     var distance: Double?
+    
+    /// The level of resistance for cardio involving machines, such as stationary bikes
+    var resistance: Double?
+    
+    /// User inputs avergae heart rate for the exercise for statistical tracking
+    var heartRate: Int?
 
     // MARK: - Initializer
     /// Initializes a new `WorkoutSet` with the provided details.
@@ -81,7 +88,9 @@ final class WorkoutSet: Identifiable {
         reps: Int? = nil,
         rpe: Double? = nil,
         duration: Double? = nil,
-        distance: Double? = nil
+        distance: Double? = nil,
+        resistance: Double? = nil,
+        heartRate: Int? = nil
     ) {
         self.id = UUID()
         self.type = type
@@ -91,5 +100,7 @@ final class WorkoutSet: Identifiable {
         self.rpe = rpe
         self.duration = duration
         self.distance = distance
+        self.resistance = resistance
+        self.heartRate = heartRate
     }
 }

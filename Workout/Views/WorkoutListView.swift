@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-
+import SwiftData
 // Displays a list of workouts, categorized by type, and allows adding, deleting, and reordering workouts.
 struct WorkoutListView: View {
     // MARK: - Environment and State
@@ -44,6 +44,10 @@ struct WorkoutListView: View {
     
     // Binding to control the visibility of the navigation bar in the parent view.
     @Binding var isNavBarHidden: Bool
+    
+    @State private var todaysEvents: [WorkoutEvent] = []
+    
+    @Environment(\.modelContext) private var context
 
     // MARK: - Body
     var body: some View {
@@ -119,15 +123,37 @@ struct WorkoutListView: View {
                         .fontWeight(.bold)
                         .foregroundColor(.black)
                         .padding(.bottom, 15)
-                        .padding(.top, 10)
+                        .padding(.top, 5)
                 ) {
-                    Text("No workouts planned today")
-                        .foregroundColor(.gray)
-                        .italic()
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 10)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .listRowBackground(Color("Background"))
+                    if todaysEvents.isEmpty {
+                        Text("No workouts planned today")
+                            .foregroundColor(.gray)
+                            .italic()
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 10)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .listRowBackground(Color("Background"))
+                    } else {
+                        ForEach(todaysEvents) { event in
+                            NavigationLink {
+                                WorkoutView(workout: event.workout, isNavBarHidden: $isNavBarHidden)
+                            } label: {
+                                HStack {
+                                    Text(event.workout.title)
+                                        .font(.title3.bold())
+                                        .foregroundColor(.black)
+                                    Spacer()
+                                    if let time = event.startTime {
+                                        Text(time.formatted(date: .omitted, time: .shortened))
+                                            .foregroundColor(.gray)
+                                    }
+                                }
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 10)
+                            }
+                            .listRowBackground(Color("Background"))
+                        }
+                    }
                 }
                 
                 // Section for saved workouts (currently empty, can be expanded)
@@ -233,6 +259,9 @@ struct WorkoutListView: View {
             }
         }
         .background(Color("Background"))
+        .onAppear {
+            fetchTodaysEvents()
+        }
     }
     
     // MARK: - Helper Functions
@@ -303,6 +332,26 @@ struct WorkoutListView: View {
         // 4. Delegate the move to the parent closure.
         //    This updates the persisted SwiftData model and reassigns workout order values.
         moveWorkouts(globalSource, globalDestination)
+    }
+        
+    private func fetchTodaysEvents() {
+        let calendar = Calendar.current
+        let startOfDay = calendar.startOfDay(for: Date())
+        guard let startOfTomorrow = calendar.date(byAdding: .day, value: 1, to: startOfDay) else { return }
+
+        let descriptor = FetchDescriptor<WorkoutEvent>(
+            predicate: #Predicate { event in
+                event.date >= startOfDay && event.date < startOfTomorrow
+            },
+            sortBy: [SortDescriptor(\.startTime)]
+        )
+
+        do {
+            todaysEvents = try context.fetch(descriptor)
+        } catch {
+            print("❌ Failed to fetch today's events: \(error)")
+            todaysEvents = []
+        }
     }
 
 }

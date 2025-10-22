@@ -54,6 +54,9 @@ final class Workout: Identifiable {
     // Category of the workout, using the WorkoutCategory enum
     var category: WorkoutCategory
     
+    @Relationship(deleteRule: .cascade, inverse: \WorkoutEvent.workout)
+    var events: [WorkoutEvent] = []
+    
     // Initializer for creating a new Workout
     // - Parameters:
     //   - id: Optional UUID, defaults to a new UUID if not provided

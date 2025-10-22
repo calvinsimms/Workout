@@ -36,56 +36,26 @@ struct SettingsView: View {
                         List {
                             Section {
                                 NavigationLink(destination: ExercisesView()) {
-                                    HStack {
-                                        Text("Manage Exercises")
+                                    Text("Manage Exercises")
+                                }
 
-                                        Spacer()
-                                    }
+                                Text("Appearance")
+
+                                Text("Units")
                                     
-                                }
+                                Text("Include RPE")
                                 
-                                HStack {
-                                    Text("Appearance")
+                                // Will include 1RM, Wilks, DOTS, etc.
+                                Text("Calculations")
+                        
+                                Text("Prevent Screen Sleep")
+
+                                Text("Send Feedback")
+
+                                Text("Rate in AppStore")
+
+                                Text("Reset Defaults")
                                         
-                                    Spacer()
-                                }
-                            
-                                HStack {
-                                    Text("Units")
-                                        
-                                    Spacer()
-                                }
-                                
-                                HStack {
-                                    Text("Include RPE")
-                                        
-                                    Spacer()
-                                }
-                            
-                                HStack {
-                                    Text("Prevent Screen Sleep")
-                                        
-                                    Spacer()
-                                }
-                                
-                                HStack {
-                                    Text("Send Feedback")
-                                        
-                                    Spacer()
-                                }
-                            
-                                HStack {
-                                    Text("Rate in AppStore")
-                                        
-                                    Spacer()
-                                }
-                                
-                                HStack {
-                                    Text("Reset Defaults")
-                                        
-                                    Spacer()
-                                }
-                               
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.vertical, 10)

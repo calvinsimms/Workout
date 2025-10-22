@@ -6,134 +6,156 @@
 //
 
 import SwiftUI
-import UIKit // Needed for some UIKit integrations (like haptics if added later)
+import Foundation
+import SwiftData
 
-// MARK: - Event Model for Placeholders
-// Simple struct representing an event (workout) on a specific date for temporary
-// workout placeholders until actual workouts are integrated
-struct Event: Identifiable {
-    let id = UUID()
-    let date: Date
-    let title: String
-}
-
-let sampleEvents: [Event] = [
-    Event(date: Date(), title: "Pull Day"),
-    Event(date: Date(), title: "Running"),
-    Event(date: Date(), title: "Chest")
-]
-
-// MARK: - Calendar ViewModel
-// ObservableObject managing the state and logic for the calendar grid
-// This ViewModel is responsible for generating the days to display,
-// tracking the currently visible month, and handling month navigation.
-class CalendarViewModel: ObservableObject {
+// MARK: - CalendarViewModel
+// ObservableObject managing both calendar grid logic and scheduled workout events.
+// This version integrates with SwiftData to fetch and observe real WorkoutEvent data.
+@MainActor // Add @MainActor here
+final class CalendarViewModel: ObservableObject {
     
-    // Published Properties
+    // MARK: - Published Properties
     
+    // Array of Day objects representing each visible cell in the calendar grid.
     @Published var days: [Day] = []
-    /*
-     Array of Day objects representing each cell in the calendar grid.
-     SwiftUI observes this array, so the UI automatically updates when days change.
-     Each Day contains:
-       - date: actual Date object
-       - isWithinCurrentMonth: whether the day belongs to the visible month or is padding from previous/next month
-    */
     
+    // The month currently displayed in the calendar.
     @Published var currentDate: Date
-    /*
-     The currently displayed month in the calendar.
-     Initialized to today's date, but changes when the user navigates months.
-     Used to generate the days for the grid.
-    */
     
-    // Private Properties
+    // All WorkoutEvents retrieved for the current visible month.
+    // This allows the calendar grid and daily workout list to update reactively.
+    @Published var events: [WorkoutEvent] = []
+    
+    
+    // MARK: - Private Properties
+    
+    // The SwiftData context used to fetch and persist WorkoutEvent data.
+    // Make this property optional and inject it later.
+    private var context: ModelContext?
+
+    // Calendar instance used for date calculations (locale-aware).
     private let calendar = Calendar.current
-    /*
-     Calendar instance used for all date calculations:
-       - Finding the number of days in a month
-       - Determining the first weekday
-       - Adding/subtracting months or days
-     Using Calendar.current respects the user's locale and calendar settings.
-    */
     
-    // Initializer
+    
+    // MARK: - Initializer
+    
+    /// Initializes the ViewModel with a SwiftData context and populates the current month.
+    ///
+    /// - Parameter context: The SwiftData `ModelContext` injected from the view hierarchy.
     init() {
-        self.currentDate = Date() // Start at today
-        generateDays(for: currentDate) // Populate the calendar for the current month
+        self.currentDate = Date()
+        generateDays(for: currentDate)
+    }
+
+    /// Sets the model context and fetches the events for the current month.
+    func setContext(_ newContext: ModelContext) {
+         self.context = newContext
+         fetchEventsForCurrentMonth()
+     }
+    
+    
+    // MARK: - Fetching Events
+    
+    func fetchEventsForCurrentMonth() {
+        guard let context = context else { return }
+        let descriptor = FetchDescriptor<WorkoutEvent>(sortBy: [SortDescriptor(\.date)])
+        events = (try? context.fetch(descriptor)) ?? []
     }
     
-    // Generate Days for Month
+    
+    // MARK: - Calendar Grid Generation
+    
+    /// Generates `Day` objects for the currently visible month,
+    /// including padding days from the previous and next months.
     func generateDays(for date: Date) {
-        /*
-         Generates Day objects to fill a full calendar grid:
-         - Includes previous and next month padding to complete weeks.
-         - Ensures the grid always has full rows (7 columns for weekdays).
-         - Updates the `days` array which drives the SwiftUI grid.
-        */
+        days.removeAll()
         
-        days.removeAll() // Clear existing days before generating new ones
-        
-        // 1. Determine number of days in current month
         let range = calendar.range(of: .day, in: .month, for: date)!
-        
-        // 2. Determine the first day of the current month
         let firstOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: date))!
-        
-        // 3. Determine weekday index for the first day (1 = Sunday, 7 = Saturday)
         let firstWeekday = calendar.component(.weekday, from: firstOfMonth)
         
-        // 4. Add previous month's days as padding (to align first day correctly)
+        // Previous month padding
         let prevMonth = calendar.date(byAdding: .month, value: -1, to: date)!
-        let prevMonthRange = calendar.range(of: .day, in: .month, for: prevMonth)!
-        for day in (prevMonthRange.count - (firstWeekday - 2))...prevMonthRange.count {
-            if let date = calendar.date(bySetting: .day, value: day, of: prevMonth) {
-                days.append(Day(date: date, isWithinCurrentMonth: false))
+        let prevRange = calendar.range(of: .day, in: .month, for: prevMonth)!
+        for day in (prevRange.count - (firstWeekday - 2))...prevRange.count {
+            if let d = calendar.date(bySetting: .day, value: day, of: prevMonth) {
+                days.append(Day(date: d, isWithinCurrentMonth: false))
             }
         }
         
-        // 5. Add all days for the current month
+        // Current month
         for day in range {
-            if let date = calendar.date(bySetting: .day, value: day, of: date) {
-                days.append(Day(date: date, isWithinCurrentMonth: true))
+            if let d = calendar.date(bySetting: .day, value: day, of: date) {
+                days.append(Day(date: d, isWithinCurrentMonth: true))
             }
         }
         
-        // 6. Add next month's days as padding (to fill the last row)
+        // Next month padding
         while days.count % 7 != 0 {
-            if let nextMonthDate = calendar.date(byAdding: .day, value: 1, to: days.last!.date) {
-                days.append(Day(date: nextMonthDate, isWithinCurrentMonth: false))
+            if let next = calendar.date(byAdding: .day, value: 1, to: days.last!.date) {
+                days.append(Day(date: next, isWithinCurrentMonth: false))
             }
         }
     }
     
-    // Navigate Months
+    
+    // MARK: - Month Navigation
+    
+    /// Moves the visible calendar month by the given offset (±1 for next/previous).
     func moveMonth(by offset: Int) {
-        /*
-         Changes the visible month by the specified offset:
-         - Positive offset moves forward
-         - Negative offset moves backward
-         After updating currentDate, regenerate the days for the new month.
-        */
         if let newDate = calendar.date(byAdding: .month, value: offset, to: currentDate) {
             currentDate = newDate
             generateDays(for: currentDate)
+            fetchEventsForCurrentMonth()
         }
     }
     
-    // Month + Year Display
+    
+    // MARK: - Display Helpers
+    
+    /// Returns the header text for the current month (e.g., “October 2025”).
     func monthYearText() -> String {
-        /*
-         Returns a string for the header of the calendar, e.g., "October 2025".
-         - Uses DateFormatter with format "LLLL yyyy":
-           - "LLLL" = full month name
-           - "yyyy" = full year
-        */
         let formatter = DateFormatter()
         formatter.dateFormat = "LLLL yyyy"
         return formatter.string(from: currentDate)
     }
+    
+    
+    // MARK: - Event Utilities
+    
+    /// Determines whether a given date has any scheduled WorkoutEvents.
+    func hasEvent(on date: Date) -> Bool {
+        events.contains { Calendar.current.isDate($0.date, inSameDayAs: date) }
+    }
+    
+    /// Returns all WorkoutEvents scheduled for the provided date.
+    func events(on date: Date) -> [WorkoutEvent] {
+        events.filter { Calendar.current.isDate($0.date, inSameDayAs: date) }
+    }
+    
+    func deleteEvent(at offsets: IndexSet) {
+        guard let context = context else { return }
+        for index in offsets {
+            let event = events[index]
+            context.delete(event)
+        }
+        do {
+            try context.save()
+            fetchEventsForCurrentMonth()
+        } catch {
+            print("⚠️ Failed to delete event: \(error.localizedDescription)")
+        }
+    }
+
+    func moveEvent(from source: IndexSet, to destination: Int) {
+        var reordered = events
+        reordered.move(fromOffsets: source, toOffset: destination)
+        events = reordered
+    }
+    
 }
+
 
 
 // Day Model
@@ -228,61 +250,70 @@ struct CustomCalendarGrid: View {
                 ForEach(viewModel.days) { day in
                     
                     // Check if the current day has any events
-                    // (Uses temporary sample data for now — will later connect to real workouts)
-                    let hasEvent = sampleEvents.contains { event in
-                        Calendar.current.isDate(event.date, inSameDayAs: day.date)
-                    }
+                    let hasEvent = viewModel.hasEvent(on: day.date)
+
                     
                     // Check if this date is today’s date (used to outline “today”)
                     let isToday = Calendar.current.isDateInToday(day.date)
                     
                     // Display the numerical day (e.g., “15”)
-                    Text("\(Calendar.current.component(.day, from: day.date))")
-                        .frame(maxWidth: .infinity, minHeight: 40)
-                        .background(
-                            ZStack {
-                                
-                                // 1. Outline today’s date if it’s not currently selected
-                                if isToday && !Calendar.current.isDate(day.date, inSameDayAs: selectedDate) {
-                                    Circle()
-                                        .stroke(Color.black, lineWidth: 2)
+                    VStack(spacing: 4) {
+                        // --- DAY NUMBER INSIDE THE CIRCLE ---
+                        Text("\(Calendar.current.component(.day, from: day.date))")
+                            .frame(width: 40, height: 40)
+                            .background(
+                                ZStack {
+                                    if isToday && !Calendar.current.isDate(day.date, inSameDayAs: selectedDate) {
+                                        Circle()
+                                            .stroke(Color.black, lineWidth: 2)
+                                    }
+                                    
+                                    if hasEvent && !Calendar.current.isDate(day.date, inSameDayAs: selectedDate) {
+                                        Circle()
+                                            .fill(Color("Button"))
+                                    }
+                                    
+                                    if Calendar.current.isDate(day.date, inSameDayAs: selectedDate) {
+                                        Circle()
+                                            .fill(Color.black)
+                                    }
                                 }
-                                
-                                // 2. Fill the day with a color if there’s an event (but it’s not selected)
-                                if hasEvent && !Calendar.current.isDate(day.date, inSameDayAs: selectedDate) {
-                                    Circle()
-                                        .fill(Color("Button"))
+                            )
+                            .foregroundColor(
+                                day.isWithinCurrentMonth
+                                ? (Calendar.current.isDate(day.date, inSameDayAs: selectedDate) ? .white : .black)
+                                : .gray
+                            )
+
+                        let workouts = viewModel.events(on: day.date)
+                        VStack(spacing: 1) {
+                            if hasEvent {
+                                ForEach(workouts.prefix(1)) { event in
+                                    Text(event.workout.title)
+                                        .font(.system(size: 10))
+                                        .lineLimit(1)
+                                        .truncationMode(.tail)
+                                        .frame(maxWidth: 40)
+                                        .foregroundColor(.black)
                                 }
-                                
-                                // 3. Fill the day solid black if it’s the currently selected date
-                                if Calendar.current.isDate(day.date, inSameDayAs: selectedDate) {
-                                    Circle()
-                                        .fill(Color.black)
-                                        .transition(.opacity)
-                                }
-                            }
-                        )
-                        .animation(.easeInOut(duration: 0.3), value: selectedDate)
-                        
-                        // Text color logic:
-                        // - White for selected date
-                        // - Black for normal current-month days
-                        // - Gray for days that belong to adjacent months
-                        .foregroundColor(
-                            day.isWithinCurrentMonth
-                            ? (Calendar.current.isDate(day.date, inSameDayAs: selectedDate) ? .white : .black)
-                            : .gray
-                        )
-                        
-                        // Makes the entire cell tappable
-                        .contentShape(Rectangle())
-                        
-                        // When tapped, set selectedDate to this day (with animation)
-                        .onTapGesture {
-                            withAnimation {
-                                selectedDate = day.date
+                             
+                            } else {
+                                Text(" ")
+                                    .font(.system(size: 8))
+                                    .frame(maxWidth: 36)
+                                    .opacity(0)
                             }
                         }
+                        .frame(height: 15)
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 50)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        withAnimation {
+                            selectedDate = day.date
+                        }
+                    }
+
                 }
             }
             .padding(.horizontal, 10)
@@ -291,43 +322,38 @@ struct CustomCalendarGrid: View {
     }
 }
 
-// MARK: - Main Calendar
-// Displays a monthly calendar, highlights days with workouts (events),
-// and lists workouts for the currently selected day.
+// MARK: - CalendarView
+// Displays a monthly calendar with workout events stored in SwiftData.
+// The view shows workout indicators on each day and lists scheduled workouts
+// for the currently selected date.
 struct CalendarView: View {
     
-    // MARK: State Properties
-    // Tracks which day is currently selected by the user.
-    // Defaults to today’s date when the view first loads.
+    // MARK: - SwiftData Context
+    // Accesses the SwiftData model context (the “database connection” for models).
+    // We inject this into the ViewModel so it can fetch and observe WorkoutEvent data.
+    @Environment(\.modelContext) private var modelContext
+
+    // MARK: - State Properties
+    
+    // Tracks which date is currently selected by the user.
     @State private var selectedDate: Date = Date()
     
-    // Controls whether the “Add Exercise” sheet (modal) is visible.
-    // Set to true when the user taps the plus button in the header.
-    @State private var isAddExercisePresented = false
+    // Controls presentation of the “Add Workout” sheet.
+    @State private var isAddWorkoutPresented = false
     
-    // View model responsible for generating calendar data.
-    // @StateObject ensures it is created once and stays alive
-    // as long as this view exists.
-    @StateObject private var calendarVM = CalendarViewModel()
+    // Creates a single instance of the ViewModel for this view’s lifetime.
+    // The ViewModel handles all calendar logic and event fetching.
+    @StateObject private var viewModel = CalendarViewModel()
+
+
+
     
-    
-    // MARK: Computed Property: Events for Selected Day
-    // Filters the sampleEvents array to include only those
-    // whose date matches the currently selectedDate.
-    private var eventsForSelectedDate: [Event] {
-        sampleEvents.filter { event in
-            Calendar.current.isDate(event.date, inSameDayAs: selectedDate)
-        }
-    }
-    
-    
-    // MARK: Body
+    // MARK: - Body
     var body: some View {
-        VStack(spacing: 0) { // Stack header, grid, and event list vertically
+        VStack(spacing: 0) {
             
-            // MARK: Header
+            // MARK: - Header
             HStack {
-                // Left: Pencil icon (future use for editing, e.g., rename or edit workouts)
                 Image(systemName: "pencil")
                     .font(.title2)
                     .foregroundColor(.black)
@@ -339,7 +365,6 @@ struct CalendarView: View {
                 
                 Spacer()
                 
-                // Center: "Calendar" title text
                 Text("Calendar")
                     .font(.title)
                     .fontWeight(.bold)
@@ -349,11 +374,10 @@ struct CalendarView: View {
                 
                 Spacer()
                 
-                // Right: Add new workout button (plus icon)
-                // Opens a sheet to add a new workout or exercise entry
-                Button(action: {
-                    isAddExercisePresented = true
-                }) {
+                // “Add Workout” button to schedule a new event.
+                Button {
+                    isAddWorkoutPresented = true
+                } label: {
                     Image(systemName: "plus")
                         .font(.title2)
                         .foregroundColor(.black)
@@ -368,45 +392,60 @@ struct CalendarView: View {
             
             Divider()
             
-            
-            // MARK: Custom Calendar Grid
-            // Displays a full month calendar grid with selectable days
-
+            // MARK: - Calendar Grid
+            // The calendar grid now highlights days with real WorkoutEvent data.
             CustomCalendarGrid(
-                viewModel: calendarVM,
-                selectedDate: $selectedDate // Two-way binding for selection
+                viewModel: viewModel,
+                selectedDate: $selectedDate
             )
-            
             
             Divider()
             
-            
-            // MARK: Event List for Selected Day
-            // Displays all workouts/events for the currently selected date.
+            // MARK: - Workout List for Selected Date
             List {
-                ForEach(eventsForSelectedDate) { event in
-                    HStack {
-                        Text(event.title)
+                let events = viewModel.events(on: selectedDate)
+                
+                Section {
+                    ForEach(events) { event in
+                        HStack {
+                            Text(event.workout.title)
+                                .font(.system(.title3, weight: .semibold))
+                            Spacer()
+                            if let time = event.startTime {
+                                Text(time.formatted(date: .omitted, time: .shortened))
+                                    .foregroundColor(.gray)
+                            }
+                        }
+                        .padding(.vertical, 10)
+                        .listRowBackground(Color("Background"))
                     }
-                    .font(.system(.title3, weight: .semibold))
-                    .padding(.vertical, 10)
+                    .onDelete { indexSet in
+                        let allEvents = viewModel.events(on: selectedDate)
+                        let globalOffsets = IndexSet(indexSet.map { idx in
+                            viewModel.events.firstIndex(where: { $0.id == allEvents[idx].id })!
+                        })
+                        viewModel.deleteEvent(at: globalOffsets)
+                    }
+                    .onMove { source, destination in
+                        viewModel.moveEvent(from: source, to: destination)
+                    }
+                }
+
+                Section {
+                    Button {
+                        isAddWorkoutPresented = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "plus.circle.fill")
+                            Text("Add Workout")
+                                .font(.title3)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.black)
+                                .padding(.vertical, 10)
+                        }
+                    }
                     .listRowBackground(Color("Background"))
                 }
-                Button(action: {
-                    isAddExercisePresented = true
-                }) {
-                    HStack {
-                        Image(systemName: "plus.circle.fill")
-                        
-                        Text("Add Workout")
-                            .font(.title3)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.black)
-                            .padding(.vertical, 10)
-                    }
-                }
-                .listRowBackground(Color("Background"))
-            
             }
             .listStyle(.plain)
             .safeAreaInset(edge: .bottom) {
@@ -417,14 +456,21 @@ struct CalendarView: View {
         .colorScheme(.light)
         .ignoresSafeArea(edges: .bottom)
         
-        // MARK: - Add Exercise Sheet
-        // When triggered by the plus button, a modal sheet appears.
-        // Currently a placeholder — will be replaced with CreateWorkoutView later.
-        .sheet(isPresented: $isAddExercisePresented) {
-            Text("Add Workouts View")
+        .sheet(isPresented: $isAddWorkoutPresented, onDismiss: {
+            // Refresh events when the sheet is closed
+            viewModel.fetchEventsForCurrentMonth()
+        }) {
+            AddWorkoutEventView(defaultDate: selectedDate)
+                .presentationDetents([.medium])
+        }
+        // MARK: - Inject Real ModelContext
+        // Replace the temporary preview context with the real environment context.
+        .onAppear {
+            viewModel.setContext(modelContext)
         }
     }
 }
+
 #Preview {
     CalendarView()
 }

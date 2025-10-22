@@ -105,6 +105,8 @@ struct CreateWorkoutView: View {
                 }
             }
         }
+        .scrollContentBackground(.hidden) // hides default form background
+        .background(Color("Background")) 
         // Title changes depending on whether we’re creating or editing.
         .navigationTitle(isNewWorkout ? "New Workout" : "Edit Workout")
         
