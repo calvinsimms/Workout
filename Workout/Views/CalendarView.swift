@@ -183,7 +183,7 @@ struct CustomCalendarGrid: View {
     
     // Body
     var body: some View {
-        VStack(spacing: 5) {
+        VStack(spacing: 0) {
             
             // Month Header
             // Displays the month and year (e.g., “October 2025”)
@@ -227,7 +227,8 @@ struct CustomCalendarGrid: View {
                 .font(.title)
             }
             .padding(.horizontal, 20)
-            .padding(.vertical)
+            .padding(.top, 10)
+            .padding(.bottom, 10)
             .foregroundStyle(.black)
             
             // MARK: Weekday Labels
@@ -239,12 +240,13 @@ struct CustomCalendarGrid: View {
                 }
             }
             .padding(.horizontal, 10)
-            .padding(.bottom, 10)
+            .padding(.bottom, 5)
+
             
             // MARK: Calendar Grid
             // The grid of day cells — one for each Day object provided by the ViewModel.
             // Uses LazyVGrid to efficiently layout and render the calendar.
-            LazyVGrid(columns: columns, spacing: 10) {
+            LazyVGrid(columns: columns, spacing: 5) {
                 
                 // Loop through each Day in the ViewModel
                 ForEach(viewModel.days) { day in
@@ -257,7 +259,7 @@ struct CustomCalendarGrid: View {
                     let isToday = Calendar.current.isDateInToday(day.date)
                     
                     // Display the numerical day (e.g., “15”)
-                    VStack(spacing: 4) {
+                    VStack(spacing: 5) {
                         // --- DAY NUMBER INSIDE THE CIRCLE ---
                         Text("\(Calendar.current.component(.day, from: day.date))")
                             .frame(width: 40, height: 40)
@@ -286,7 +288,7 @@ struct CustomCalendarGrid: View {
                             )
 
                         let workouts = viewModel.events(on: day.date)
-                        VStack(spacing: 1) {
+                        VStack(spacing: 0) {
                             if hasEvent {
                                 ForEach(workouts.prefix(1)) { event in
                                     Text(event.workout.title)
@@ -299,12 +301,12 @@ struct CustomCalendarGrid: View {
                              
                             } else {
                                 Text(" ")
-                                    .font(.system(size: 8))
+                                    .font(.system(size: 10))
                                     .frame(maxWidth: 36)
                                     .opacity(0)
                             }
                         }
-                        .frame(height: 15)
+                        .frame(height: 10)
                     }
                     .frame(maxWidth: .infinity, minHeight: 50)
                     .contentShape(Rectangle())
@@ -317,7 +319,7 @@ struct CustomCalendarGrid: View {
                 }
             }
             .padding(.horizontal, 10)
-            .padding(.bottom, 20)
+            .padding(.bottom, 5)
         }
     }
 }
