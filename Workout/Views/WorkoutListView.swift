@@ -21,8 +21,8 @@ struct WorkoutListView: View {
     @State private var isCreatingNewWorkout = false
     
     // Temporary workout object for creating a new workout.
-    @State private var newWorkout = Workout(title: "", order: 0, exercises: [])
-    
+    @State private var newWorkout = Workout(title: "", order: 0)
+
     // Tracks which workout categories are currently expanded in the list.
     // Each `WorkoutCategory` in this set represents an open DisclosureGroup.
     // Used to preserve expand/collapse state while navigating through workouts.
@@ -96,7 +96,7 @@ struct WorkoutListView: View {
                         workoutCategory: .resistance,
                         onSave: { workout in
                             addWorkout(workout)
-                            newWorkout = Workout(title: "", order: 0, exercises: [])
+                            newWorkout = Workout(title: "", order: 0)
                         }
                     )
                 ) {
@@ -211,14 +211,14 @@ struct WorkoutListView: View {
                             }
                             
                             NavigationLink(
-                               destination: CreateWorkoutView(
-                                   workout: Workout(title: "", order: 0, exercises: [], category: category),
+                                destination: CreateWorkoutView(
+                                    workout: Workout(title: "", order: 0, category: category),
                                    isNewWorkout: true,
                                    isNavBarHidden: $isNavBarHidden,
                                    workoutCategory: category,
                                    onSave: { workout in
                                        addWorkout(workout)
-                                       newWorkout = Workout(title: "", order: 0, exercises: [])
+                                       newWorkout = Workout(title: "", order: 0)
                                    }
                                )
                            ) {
@@ -365,25 +365,21 @@ struct WorkoutListView: View {
         Workout(
             title: "Leg Day",          // Name of the workout
             order: 0,                  // Order for sorting purposes
-            exercises: [],             // Empty list of exercises for simplicity
             category: .resistance   // Workout category
         ),
         Workout(
             title: "Push Day",
             order: 1,
-            exercises: [],
             category: .resistance
         ),
         Workout(
             title: "Run",
             order: 2,
-            exercises: [],
             category: .cardio
         )
 //        Workout(
 //            title: "Tennis",
 //            order: 3,
-//            exercises: [],
 //            category: .other
 //        )
     ]

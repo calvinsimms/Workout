@@ -85,7 +85,7 @@ final class CalendarViewModel: ObservableObject {
 
         // 1️⃣ Get the first day of the target month
         guard let firstOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: date)),
-              let range = calendar.range(of: .day, in: .month, for: firstOfMonth) else {
+              let _ = calendar.range(of: .day, in: .month, for: firstOfMonth) else {
             return
         }
 
@@ -301,7 +301,7 @@ struct CustomCalendarGrid: View {
                                 : .gray
                             )
 
-                        let workouts = viewModel.events(on: day.date)
+//                        let workouts = viewModel.events(on: day.date)
 //                        VStack(spacing: 0) {
 //                            if hasEvent {
 //                                ForEach(workouts.prefix(1)) { event in

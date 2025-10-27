@@ -48,14 +48,17 @@ final class Workout: Identifiable {
     // Order number for sorting workouts
     var order: Int
     
-    // Relationship to exercises associated with this workout. A workout can contain multiple exercises
-    @Relationship var exercises: [Exercise] = []
     
     // Category of the workout, using the WorkoutCategory enum
     var category: WorkoutCategory
     
+    // Each workout can have many events (sessions).
+    // Cascade delete ensures removing a workout deletes its scheduled events.    
     @Relationship(deleteRule: .cascade, inverse: \WorkoutEvent.workout)
     var events: [WorkoutEvent] = []
+    
+    @Relationship(deleteRule: .cascade, inverse: \WorkoutExercise.workout)
+    var workoutExercises: [WorkoutExercise] = []
     
     // Initializer for creating a new Workout
     // - Parameters:
@@ -68,13 +71,11 @@ final class Workout: Identifiable {
         id: UUID = UUID(),
         title: String,
         order: Int = 0,
-        exercises: [Exercise] = [],
         category: WorkoutCategory = .resistance
     ) {
         self.id = id
         self.title = title
         self.order = order
-        self.exercises = exercises
         self.category = category
     }
 }

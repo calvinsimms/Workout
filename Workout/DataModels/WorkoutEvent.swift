@@ -49,6 +49,11 @@ final class WorkoutEvent: Identifiable {
     //   - Fetch all scheduled dates for a given Workout
     @Relationship var workout: Workout
     
+    // All sets performed in this event
+    // Cascade deletion ensures that when an event is deleted,
+    // all logged sets for that event are removed automatically.
+    @Relationship(deleteRule: .cascade, inverse: \WorkoutSet.workoutEvent)
+    var sets: [WorkoutSet] = []
     
     // MARK: - Initializer
     

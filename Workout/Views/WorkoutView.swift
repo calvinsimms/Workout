@@ -48,25 +48,28 @@ struct WorkoutView: View {
             Divider()
             
             // MARK: - Exercise List
-            if workout.exercises.isEmpty {
-                // Display placeholder text if no exercises exist.
+            if workout.workoutExercises.isEmpty {
                 Text("No exercises added yet")
                     .foregroundColor(.secondary)
                     .padding(.horizontal)
             } else {
-                // Display exercises in a scrollable list with disclosure groups.
                 List {
-                    ForEach(workout.exercises, id: \.id) { exercise in
+                    ForEach(workout.workoutExercises.sorted(by: { $0.order < $1.order }), id: \.id) { workoutExercise in
                         DisclosureGroup {
-                            // Hardcoded exercise details for now.
                             VStack(alignment: .leading, spacing: 5) {
-                                Text("Sets: 3")
-                                Text("Reps: 10")
-                                Text("Weight: 135 lbs")
+                                if let target = workoutExercise.targetNote, !target.isEmpty {
+                                    Text("Target: \(target)")
+                                }
+                                if let notes = workoutExercise.notes, !notes.isEmpty {
+                                    Text("Notes: \(notes)")
+                                        .foregroundColor(.gray)
+                                }
+                                // Placeholder for set-tracking UI (future step)
+                                Text("Sets will go here")
+                                    .foregroundColor(.secondary)
                             }
                         } label: {
-                            // Exercise name displayed prominently.
-                            Text(exercise.name)
+                            Text(workoutExercise.exercise.name)
                                 .font(.system(.title3, weight: .semibold))
                                 .padding(.vertical, 20)
                                 .padding(.horizontal, 10)
@@ -79,6 +82,7 @@ struct WorkoutView: View {
                 .padding(.trailing, 20)
                 .tint(.black)
             }
+
             
             Spacer()
             
@@ -288,10 +292,7 @@ struct WorkoutView: View {
 // MARK: - Preview
 #Preview {
     WorkoutView(
-        workout: Workout(title: "Leg Day", exercises: [
-            Exercise(name: "Squats"),
-            Exercise(name: "Lunges")
-        ]),
+        workout: Workout(title: "Leg Day"),
         isNavBarHidden: .constant(false)
     )
 }

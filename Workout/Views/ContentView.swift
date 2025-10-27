@@ -201,7 +201,4 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
-        .modelContainer(for: [Workout.self, Exercise.self, WorkoutEvent.self])
 }
-
-

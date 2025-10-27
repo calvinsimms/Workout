@@ -272,7 +272,6 @@ struct ExerciseSelectionView: View {
         workoutCategory: .resistance,
         isNavBarHidden: $isNavBarHidden
     )
-    .modelContainer(for: [Exercise.self], inMemory: true)
 }
 
 

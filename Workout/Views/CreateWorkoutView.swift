@@ -53,7 +53,7 @@ struct CreateWorkoutView: View {
          self._isNavBarHidden = isNavBarHidden
          self.workoutCategory = workoutCategory
          self.onSave = onSave
-         _selectedExercises = State(initialValue: Set(workout.exercises))
+        _selectedExercises = State(initialValue: Set(workout.workoutExercises.map { $0.exercise }))
      }
     
     // MARK: - Body
@@ -114,17 +114,32 @@ struct CreateWorkoutView: View {
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Save") {
-                    // Update the workout model with the current selection.
-                    workout.exercises = Array(selectedExercises).sorted { $0.name < $1.name }
+                    // Clear old workout exercises
+                    workout.workoutExercises.removeAll()
                     
-                    // Trigger the save callback, if provided.
+                    // Create a WorkoutExercise for each selected Exercise
+                    let newWorkoutExercises = Array(selectedExercises)
+                        .sorted(by: { $0.name < $1.name })
+                        .enumerated()
+                        .map { index, exercise in
+                            WorkoutExercise(
+                                notes: nil,
+                                targetNote: nil,
+                                order: index,
+                                workout: workout,
+                                exercise: exercise
+                            )
+                        }
+                    
+                    // Assign the new ones
+                    workout.workoutExercises = newWorkoutExercises
+                    
+                    // Trigger save callback
                     onSave?(workout)
-                    
-                    // Dismiss the view to return to the previous screen.
                     dismiss()
                 }
-                // Disable save if the title field is empty or whitespace-only.
                 .disabled(workout.title.trimmingCharacters(in: .whitespaces).isEmpty)
+
             }
         }
         .onAppear {
@@ -146,18 +161,11 @@ struct CreateWorkoutView: View {
 #Preview {
     @Previewable @State var isNavBarHidden = false
 
-    let workout = Workout(
-        title: "Example",
-        exercises: [
-            Exercise(name: "Squats"),
-            Exercise(name: "Lunges")
-        ]
-    )
+    let workout = Workout(title: "Example")
 
     CreateWorkoutView(
         workout: workout,          
         isNewWorkout: true,
         isNavBarHidden: $isNavBarHidden
     )
-    .modelContainer(for: [Workout.self, Exercise.self], inMemory: true)
 }

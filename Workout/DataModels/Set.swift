@@ -17,7 +17,7 @@ import SwiftData
 /// - `Identifiable` (for use in SwiftUI Lists and Pickers)
 /// - `Codable` (to support serialization for persistence or export)
 enum SetType: String, CaseIterable, Identifiable, Codable {
-    case weightlifting = "Weightlifting"
+    case resistance = "Resistance"
     case cardio = "Cardio"
     case bodyweight = "Bodyweight"
     
@@ -70,6 +70,19 @@ final class WorkoutSet: Identifiable {
     
     /// User inputs avergae heart rate for the exercise for statistical tracking
     var heartRate: Int?
+
+    /// The parent exercise that this set belongs to.
+    /// Defines the inverse side of the relationship to ensure that
+    /// when a set is added to an exercise’s `sets` array, this property
+    /// automatically references that same exercise (and vice versa).
+    /// Declared as optional so sets can be created before being attached
+    /// to an exercise instance if needed.
+    @Relationship(inverse: \Exercise.sets) var exercise: Exercise?
+    
+    
+    // Reference to the specific workout event this set was performed in
+    // Deleting the event cascades deletion of these sets.
+    @Relationship var workoutEvent: WorkoutEvent?
 
     // MARK: - Initializer
     /// Initializes a new `WorkoutSet` with the provided details.
