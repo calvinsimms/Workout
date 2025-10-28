@@ -26,6 +26,41 @@ enum SetType: String, CaseIterable, Identifiable, Codable {
     var id: String { rawValue }
 }
 
+
+/// Describes all possible measurable workout attributes.
+enum WorkoutAttribute: String, CaseIterable, Identifiable {
+    case weight, reps, rpe, duration, distance, resistance, heartRate
+    var id: String { rawValue }
+
+    /// A short display label for UI.
+    var label: String {
+        switch self {
+        case .weight: return "Weight"
+        case .reps: return "Reps"
+        case .rpe: return "RPE"
+        case .duration: return "Duration"
+        case .distance: return "Distance"
+        case .resistance: return "Resistance"
+        case .heartRate: return "Heart Rate"
+        }
+    }
+}
+
+extension SetType {
+    /// Returns which attributes apply to this type of exercise.
+    var relevantAttributes: [WorkoutAttribute] {
+        switch self {
+        case .resistance:
+            return [.weight, .reps, .rpe]
+        case .cardio:
+            return [.duration, .distance, .resistance, .heartRate, .rpe]
+        case .bodyweight:
+            return [.reps, .rpe]   // <- as you requested
+        }
+    }
+}
+
+
 // MARK: - WorkoutSet Model
 /// A model representing a single exercise set within a workout.
 /// Each `WorkoutSet` stores performance data for one attempt at an exercise.

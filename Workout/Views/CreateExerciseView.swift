@@ -121,6 +121,15 @@ struct CreateExerciseView: View {
                     }
                     .pickerStyle(.menu)
                 }
+                Section {
+                    Toggle("Bodyweight Exercise", isOn: $exercise.isBodyweight)
+                        .tint(.blue)
+                        .accessibilityLabel("Marks this exercise as bodyweight only")
+                } footer: {
+                    Text("Enable this if the exercise uses only your body weight (e.g. Push-Ups, Pull-Ups).")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
             }
         }
         
@@ -190,6 +199,7 @@ struct CreateExerciseView: View {
                 exercise.subCategory = nil
             }
         }
+
 
     }
     

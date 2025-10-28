@@ -62,6 +62,10 @@ final class Exercise: Identifiable, Hashable {
     /// category without needing a subcategory.
     var category: WorkoutCategory
     
+    /// Indicates whether this resistance exercise is performed using bodyweight only.
+    /// Applies only to `.resistance` category exercises.
+    var isBodyweight: Bool = false
+    
     /// A collection of all workout sets that belong to this exercise.
     ///
     /// Represents a one-to-many relationship where a single exercise
@@ -111,14 +115,32 @@ final class Exercise: Identifiable, Hashable {
         id: UUID = UUID(),
         name: String,
         category: WorkoutCategory = .other,
-        subCategory: SubCategory? = nil
+        subCategory: SubCategory? = nil,
+        isBodyweight: Bool = false
     ) {
         self.id = id
         self.name = name
         self.subCategory = subCategory
-        // Automatically use the subcategory’s parent if one exists
+        self.isBodyweight = isBodyweight
         self.category = subCategory?.parentCategory ?? category
     }
+    
+    // MARK: - Derived Properties
+
+    /// Determines which `SetType` applies to this exercise.
+    /// Used to decide which attributes or inputs are relevant when planning or logging sets.
+    var setType: SetType {
+        switch category {
+        case .cardio:
+            return .cardio
+        case .resistance:
+            return isBodyweight ? .bodyweight : .resistance
+        case .other:
+            // Treat "other" as bodyweight for now (e.g., stretching or mobility)
+            return .bodyweight
+        }
+    }
+
     
     // MARK: - Hashable & Equatable Conformance
     

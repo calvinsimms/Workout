@@ -8,142 +8,184 @@
 import SwiftUI
 import SwiftData
 
-// A view used for creating or editing a Workout.
-// It allows users to specify a workout title, category, and select exercises.
+// MARK: - WorkoutExerciseTargetsEditor
+struct WorkoutExerciseTargetsEditor: View {
+    @Bindable var we: WorkoutExercise
+
+    var body: some View {
+        DisclosureGroup(we.exercise.name) {
+            // Target mode switch
+            Picker("Targets", selection: $we.targetMode) {
+                ForEach(TargetMode.allCases) { mode in
+                    Text(mode.rawValue).tag(mode)
+                }
+            }
+            .pickerStyle(.segmented)
+            .padding(.vertical, 4)
+
+            // Simple mode: free-form note
+            if we.targetMode == .simple {
+                TextField("Enter target note…", text: Binding(
+                    get: { we.targetNote ?? "" },
+                    set: { we.targetNote = $0 }
+                ))
+                .textFieldStyle(.roundedBorder)
+            } else {
+                AdvancedTargetSetsView(we: we)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+// MARK: - AdvancedTargetSetsView
+struct AdvancedTargetSetsView: View {
+    @Bindable var we: WorkoutExercise  // the parent exercise
+    @Environment(\.modelContext) private var context
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // Show each TargetSet as a simple gray box for now
+            ForEach(we.targetSets.sorted(by: { $0.order < $1.order })) { target in
+                HStack {
+                    Text("Target Set \(target.order + 1)")
+                        .font(.subheadline)
+                    Spacer()
+                    Button(role: .destructive) {
+                        if let index = we.targetSets.firstIndex(of: target) {
+                            we.targetSets.remove(at: index)
+                        }
+                    } label: {
+                        Image(systemName: "trash")
+                    }
+                }
+                .padding()
+                .background(Color.gray.opacity(0.1))
+                .cornerRadius(8)
+            }
+
+            // Button to add a new TargetSet
+            Button {
+                let newSet = TargetSet(order: we.targetSets.count, workoutExercise: we)
+                context.insert(newSet) // ✅ ensure TargetSet is managed
+                we.targetSets.append(newSet)
+            } label: {
+                Label("Add Set", systemImage: "plus.circle.fill")
+            }
+            .padding(.top, 6)
+        }
+    }
+}
+
+// MARK: - CreateWorkoutView
 struct CreateWorkoutView: View {
-    // MARK: - Properties
-    
-    // The workout being created or edited.
-    // `@Bindable` allows SwiftData to observe changes and automatically update the model.
     @Bindable var workout: Workout
-    
-    // Whether this view is creating a new workout or editing an existing one.
     var isNewWorkout: Bool
-    
-    /// Binding to control visibility of the parent navigation bar.
     @Binding var isNavBarHidden: Bool
-    
-    // Let's "Add ____ Workout" in WorkoutListView pass the category to this view 
     var workoutCategory: WorkoutCategory
-    
-    // A callback closure executed when the user taps "Save".
-    // Useful for parent views to handle the saved workout.
     var onSave: ((Workout) -> Void)?
     
-    // Dismisses the current view when called.
     @Environment(\.dismiss) var dismiss
+    @Environment(\.modelContext) private var context
     
-    // Tracks the currently selected exercises for this workout.
-    // A `Set` is used to prevent duplicates.
     @State private var selectedExercises: Set<Exercise>
     
-    // MARK: - Initializer
-    
-    // Custom initializer that sets up binding and initial state.
-    // - Parameters:
-    //   - workout: A bindable instance of a Workout model.
-    //   - isNewWorkout: Indicates whether this is a new workout being created.
-    //   - isNavBarHidden: A binding that controls the visibility of the parent’s navigation bar.
-    //                     When this view appears, it sets the binding to `true` to hide the bar,
-    //                     and resets it to `false` when dismissed, ensuring consistent UI behavior.
-    //   - onSave: Optional closure to handle the save action.
     init(workout: Workout, isNewWorkout: Bool, isNavBarHidden: Binding<Bool>, workoutCategory: WorkoutCategory = .resistance, onSave: ((Workout) -> Void)? = nil) {
-         self._workout = Bindable(workout)
-         self.isNewWorkout = isNewWorkout
-         self._isNavBarHidden = isNavBarHidden
-         self.workoutCategory = workoutCategory
-         self.onSave = onSave
+        self._workout = Bindable(workout)
+        self.isNewWorkout = isNewWorkout
+        self._isNavBarHidden = isNavBarHidden
+        self.workoutCategory = workoutCategory
+        self.onSave = onSave
         _selectedExercises = State(initialValue: Set(workout.workoutExercises.map { $0.exercise }))
-     }
-    
-    // MARK: - Body
+    }
     
     var body: some View {
         Form {
+            // Workout Name
             Section("Workout Name") {
-                // Text field for entering or editing the workout’s title.
                 TextField("Title", text: $workout.title)
             }
             
             // Category Section
             Section(header: Text("Category")) {
-                // Picker for selecting a workout category (e.g., Strength, Cardio).
                 Picker("Category", selection: $workout.category) {
                     ForEach(WorkoutCategory.allCases) { category in
                         Text(category.rawValue).tag(category)
                     }
                 }
                 .pickerStyle(.segmented)
-                .disabled(!selectedExercises.isEmpty) // disable if any exercises are added
+                .disabled(!selectedExercises.isEmpty)
                 
-
-                   if !selectedExercises.isEmpty {
-                       HStack {
-                           Spacer ()
-                           Text("Category locked - remove exercises to change")
-                               .font(.footnote)
-                               .foregroundColor(.gray)
-                           Spacer()
-                       }
-                           
-                   }
+                if !selectedExercises.isEmpty {
+                    HStack {
+                        Spacer()
+                        Text("Category locked - remove all exercises to change")
+                            .font(.footnote)
+                            .foregroundColor(.gray)
+                        Spacer()
+                    }
+                }
             }
 
             // Exercises Section
             Section("Exercises") {
-                // Navigation link to a separate screen for selecting exercises.
-                NavigationLink("Select Exercises") {
-                    ExerciseSelectionView(selectedExercises: $selectedExercises,
-                                          workoutCategory: workout.category,
-                                          isNavBarHidden: $isNavBarHidden)
+                NavigationLink("Add Exercises") {
+                    ExerciseSelectionView(
+                        selectedExercises: $selectedExercises,
+                        workoutCategory: workout.category,
+                        isNavBarHidden: $isNavBarHidden
+                    )
                 }
 
-                // Display the list of selected exercises.
-                // Sorted alphabetically by exercise name.
-                ForEach(Array(selectedExercises).sorted(by: { $0.name < $1.name }), id: \.id) { exercise in
-                    Text(exercise.name)
+                if !workout.workoutExercises.isEmpty {
+                    ForEach(workout.workoutExercises.sorted(by: { $0.order < $1.order })) { we in
+                        WorkoutExerciseTargetsEditor(we: we)
+                    }
+                } else if !selectedExercises.isEmpty {
+                    Text("Targets will appear here after creating Workout Exercises.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                 }
             }
         }
-        .scrollContentBackground(.hidden) // hides default form background
-        .background(Color("Background")) 
-        // Title changes depending on whether we’re creating or editing.
+        .scrollContentBackground(.hidden)
+        .background(Color("Background"))
         .navigationTitle(isNewWorkout ? "New Workout" : "Edit Workout")
         
-        // Toolbar Configuration
+        // MARK: Toolbar
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Save") {
                     // Clear old workout exercises
                     workout.workoutExercises.removeAll()
                     
-                    // Create a WorkoutExercise for each selected Exercise
+                    // Create & insert new WorkoutExercises ✅
                     let newWorkoutExercises = Array(selectedExercises)
                         .sorted(by: { $0.name < $1.name })
                         .enumerated()
                         .map { index, exercise in
-                            WorkoutExercise(
+                            let we = WorkoutExercise(
                                 notes: nil,
                                 targetNote: nil,
                                 order: index,
                                 workout: workout,
                                 exercise: exercise
                             )
+                            context.insert(we) // ✅ important
+                            return we
                         }
                     
-                    // Assign the new ones
                     workout.workoutExercises = newWorkoutExercises
                     
-                    // Trigger save callback
                     onSave?(workout)
                     dismiss()
                 }
                 .disabled(workout.title.trimmingCharacters(in: .whitespaces).isEmpty)
-
             }
         }
+        
+        // MARK: Nav Bar handling
         .onAppear {
-            // Slight delay ensures nav push begins before hiding bar
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                 withAnimation(.easeInOut(duration: 0.3)) {
                     isNavBarHidden = true
@@ -155,17 +197,61 @@ struct CreateWorkoutView: View {
                 isNavBarHidden = false
             }
         }
+        
+        // MARK: Exercise Selection Handling
+        .onChange(of: selectedExercises) {
+            workout.workoutExercises = selectedExercises
+                .sorted(by: { $0.name < $1.name })
+                .enumerated()
+                .map { index, exercise in
+                    let we = WorkoutExercise(
+                        notes: nil,
+                        targetNote: nil,
+                        targetMode: .simple,
+                        order: index,
+                        workout: workout,
+                        exercise: exercise
+                    )
+                    context.insert(we) // ✅ ensure inserted
+                    return we
+                }
+        }
     }
 }
 
+// MARK: - Preview
 #Preview {
     @Previewable @State var isNavBarHidden = false
 
-    let workout = Workout(title: "Example")
+    let workout = Workout(title: "Example", category: .resistance)
 
-    CreateWorkoutView(
-        workout: workout,          
+    let bench = Exercise(name: "Bench Press", category: .resistance, subCategory: .chest)
+    let squat = Exercise(name: "Back Squat", category: .resistance, subCategory: .legs)
+
+    let we1 = WorkoutExercise(
+        notes: "Elbows tucked",
+        targetNote: "3×10 @ 135 lbs",
+        targetMode: .simple,
+        order: 0,
+        workout: workout,
+        exercise: bench
+    )
+
+    let we2 = WorkoutExercise(
+        notes: nil,
+        targetNote: nil,
+        targetMode: .advanced,
+        order: 1,
+        workout: workout,
+        exercise: squat
+    )
+
+    workout.workoutExercises = [we1, we2]
+
+    return CreateWorkoutView(
+        workout: workout,
         isNewWorkout: true,
-        isNavBarHidden: $isNavBarHidden
+        isNavBarHidden: $isNavBarHidden,
+        workoutCategory: .resistance
     )
 }

@@ -142,45 +142,46 @@ struct ContentView: View {
         // These will appear automatically grouped under their muscle group in the app.
         let defaultExercises: [Exercise] = [
             // Chest
-            Exercise(name: "Bench Press", subCategory: .chest),
-            Exercise(name: "Bench Press - Incline", subCategory: .chest),
-            Exercise(name: "Bench Press - Decline", subCategory: .chest),
-            Exercise(name: "Dumbbell Bench Press", subCategory: .chest),
-            Exercise(name: "Dumbbell Bench Press - Incline", subCategory: .chest),
-            Exercise(name: "Dumbbell Bench Press - Decline", subCategory: .chest),
-            
+            Exercise(name: "Bench Press", subCategory: .chest, isBodyweight: false),
+            Exercise(name: "Bench Press - Incline", subCategory: .chest, isBodyweight: false),
+            Exercise(name: "Bench Press - Decline", subCategory: .chest, isBodyweight: false),
+            Exercise(name: "Dumbbell Bench Press", subCategory: .chest, isBodyweight: false),
+            Exercise(name: "Dumbbell Bench Press - Incline", subCategory: .chest, isBodyweight: false),
+            Exercise(name: "Dumbbell Bench Press - Decline", subCategory: .chest, isBodyweight: false),
+
             // Shoulders
-            Exercise(name: "Overhead Press", subCategory: .shoulders),
-            Exercise(name: "Dumbbell Overhead Press", subCategory: .shoulders),
-            Exercise(name: "Lateral Raise", subCategory: .shoulders),
-            Exercise(name: "Lateral Raise - Cable", subCategory: .shoulders),
-            
+            Exercise(name: "Overhead Press", subCategory: .shoulders, isBodyweight: false),
+            Exercise(name: "Dumbbell Overhead Press", subCategory: .shoulders, isBodyweight: false),
+            Exercise(name: "Lateral Raise", subCategory: .shoulders, isBodyweight: false),
+            Exercise(name: "Lateral Raise - Cable", subCategory: .shoulders, isBodyweight: false),
+
             // Legs
-            Exercise(name: "Squats", subCategory: .legs),
-            Exercise(name: "Deadlifts", subCategory: .legs),
-            
+            Exercise(name: "Squats", subCategory: .legs, isBodyweight: false),
+            Exercise(name: "Deadlifts", subCategory: .legs, isBodyweight: false),
+
             // Back
-            Exercise(name: "Pull-ups", subCategory: .back),
-            Exercise(name: "Lat Pulldown", subCategory: .back),
-            Exercise(name: "Seated Row", subCategory: .back),
-            
+            Exercise(name: "Pull-ups", subCategory: .back, isBodyweight: true), 
+            Exercise(name: "Lat Pulldown", subCategory: .back, isBodyweight: false),
+            Exercise(name: "Seated Row", subCategory: .back, isBodyweight: false),
+
             // Biceps
-            Exercise(name: "Barbell Curl", subCategory: .biceps),
-            Exercise(name: "Dumbbell Curl", subCategory: .biceps),
-            
+            Exercise(name: "Barbell Curl", subCategory: .biceps, isBodyweight: false),
+            Exercise(name: "Dumbbell Curl", subCategory: .biceps, isBodyweight: false),
+
             // Triceps
-            Exercise(name: "Tricep Pushdown", subCategory: .triceps),
-            Exercise(name: "Overhead Tricep Extension", subCategory: .triceps),
-            
+            Exercise(name: "Tricep Pushdown", subCategory: .triceps, isBodyweight: false),
+            Exercise(name: "Overhead Tricep Extension", subCategory: .triceps, isBodyweight: false),
+
             // Abs
-            Exercise(name: "Crunches", subCategory: .abs),
-            Exercise(name: "Plank", subCategory: .abs),
-            
+            Exercise(name: "Crunches", subCategory: .abs, isBodyweight: true), // ✅ bodyweight
+            Exercise(name: "Plank", subCategory: .abs, isBodyweight: true),     // ✅ bodyweight
+
             // Cardio
             Exercise(name: "Running", category: .cardio),
             Exercise(name: "Cycling", category: .cardio),
             Exercise(name: "Rowing", category: .cardio)
         ]
+
         
         // MARK: Insert & Save
         // Insert each default exercise into the database

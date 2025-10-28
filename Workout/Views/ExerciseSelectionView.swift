@@ -167,6 +167,7 @@ struct ExerciseSelectionView: View {
             .safeAreaInset(edge: .bottom) {
                 VStack {
                     Button(action: {
+                        selectedExercises = Set(selectedExercises)
                         dismiss()
                     }) {
                         Text("Confirm & Go Back")
