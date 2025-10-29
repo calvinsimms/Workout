@@ -62,7 +62,7 @@ final class TargetSet: Identifiable, Hashable {
     ///
     /// Cascade deletion is handled from the parent (`WorkoutExercise`)
     /// side of the relationship.
-    @Relationship(inverse: \WorkoutExercise.targetSets) var workoutExercise: WorkoutExercise
+    @Relationship(inverse: \WorkoutExercise.targetSets) var workoutExercise: WorkoutExercise?
 
     // MARK: - Initializer
     

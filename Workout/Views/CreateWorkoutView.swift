@@ -8,88 +8,161 @@
 import SwiftUI
 import SwiftData
 
-// MARK: - WorkoutExerciseTargetsEditor
-struct WorkoutExerciseTargetsEditor: View {
-    @Bindable var we: WorkoutExercise
+// MARK: - Helper View for Optional Number Fields
+struct OptionalNumberField<T: LosslessStringConvertible & Numeric>: View {
+    let label: String
+    @Binding var value: T?
+    var isDecimal: Bool = true
 
     var body: some View {
-        DisclosureGroup(we.exercise.name) {
-            // Target mode switch
-            Picker("Targets", selection: $we.targetMode) {
-                ForEach(TargetMode.allCases) { mode in
-                    Text(mode.rawValue).tag(mode)
+        TextField(label, text: Binding(
+            get: { value.map(String.init) ?? "" },
+            set: { newValue in
+                if newValue.isEmpty {
+                    value = nil
+                } else if let v = T(newValue) {
+                    value = v
                 }
             }
-            .pickerStyle(.segmented)
-            .padding(.vertical, 4)
-
-            // Simple mode: free-form note
-            if we.targetMode == .simple {
-                TextField("Enter target note…", text: Binding(
-                    get: { we.targetNote ?? "" },
-                    set: { we.targetNote = $0 }
-                ))
-                .textFieldStyle(.roundedBorder)
-            } else {
-                AdvancedTargetSetsView(we: we)
-            }
-        }
-        .padding(.vertical, 4)
+        ))
+        .textFieldStyle(.roundedBorder)
+        .keyboardType(isDecimal ? .decimalPad : .numberPad)
+        .frame(width: 70)
     }
 }
 
-// MARK: - AdvancedTargetSetsView
+// MARK: - Target Attribute Field Switch
+@ViewBuilder
+func attributeField(for attribute: WorkoutAttribute, target: Binding<TargetSet>) -> some View {
+    switch attribute {
+    case .weight:
+        OptionalNumberField(label: "Weight", value: target.weight, isDecimal: true)
+    case .reps:
+        OptionalNumberField(label: "Reps", value: target.reps, isDecimal: false)
+    case .rpe:
+        OptionalNumberField(label: "RPE", value: target.rpe, isDecimal: true)
+    case .duration:
+        OptionalNumberField(label: "Duration", value: target.duration, isDecimal: true)
+    case .distance:
+        OptionalNumberField(label: "Distance", value: target.distance, isDecimal: true)
+    case .resistance:
+        OptionalNumberField(label: "Resistance", value: target.resistance, isDecimal: true)
+    case .heartRate:
+        OptionalNumberField(label: "Heart Rate", value: target.heartRate, isDecimal: false)
+    }
+}
+
+// MARK: - Advanced Target Sets
 struct AdvancedTargetSetsView: View {
-    @Bindable var we: WorkoutExercise  // the parent exercise
-    @Environment(\.modelContext) private var context
-    
+    @Environment(\.modelContext) private var modelContext
+    @Bindable var we: WorkoutExercise
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            // Show each TargetSet as a simple gray box for now
-            ForEach(we.targetSets.sorted(by: { $0.order < $1.order })) { target in
-                HStack {
-                    Text("Target Set \(target.order + 1)")
+        let sortedSets = we.targetSets.sorted(by: { $0.order < $1.order })
+
+        VStack(alignment: .leading, spacing: 12) {
+            ForEach(Array(sortedSets.enumerated()), id: \.element.id) { index, target in
+                HStack(alignment: .center, spacing: 10) {
+                    Text("\(index + 1)")
                         .font(.subheadline)
+                        .frame(width: 24)
+
+                    ForEach(we.exercise.setType.relevantAttributes, id: \.self) { attribute in
+                        attributeField(for: attribute, target: Binding(
+                            get: {
+                                target
+                            },
+                            set: { updated in
+                                if let i = we.targetSets.firstIndex(where: { $0.id == target.id }) {
+                                    we.targetSets[i] = updated
+                                }
+                            }
+                        ))
+                    }
+
                     Spacer()
+
                     Button(role: .destructive) {
+                        modelContext.delete(target)
+
+                        // Remove from relationship array
                         if let index = we.targetSets.firstIndex(of: target) {
                             we.targetSets.remove(at: index)
+                        }
+
+                        // Reorder remaining sets
+                        for (i, set) in we.targetSets.sorted(by: { $0.order < $1.order }).enumerated() {
+                            set.order = i
                         }
                     } label: {
                         Image(systemName: "trash")
                     }
+                    .buttonStyle(.plain)
                 }
-                .padding()
-                .background(Color.gray.opacity(0.1))
-                .cornerRadius(8)
+                
+                
+                
             }
 
-            // Button to add a new TargetSet
             Button {
                 let newSet = TargetSet(order: we.targetSets.count, workoutExercise: we)
-                context.insert(newSet) // ✅ ensure TargetSet is managed
+                modelContext.insert(newSet)
                 we.targetSets.append(newSet)
             } label: {
                 Label("Add Set", systemImage: "plus.circle.fill")
             }
+            .buttonStyle(.plain)
+            .labelStyle(.titleAndIcon)
+
             .padding(.top, 6)
         }
     }
 }
 
-// MARK: - CreateWorkoutView
+// MARK: - Workout Exercise Targets Editor
+struct WorkoutExerciseTargetsEditor: View {
+    @Bindable var we: WorkoutExercise
+
+    var body: some View {
+        DisclosureGroup(we.exercise.name) {
+            VStack(alignment: .leading, spacing: 8) {
+                Picker("Targets", selection: $we.targetMode) {
+                    ForEach(TargetMode.allCases) { mode in
+                        Text(mode.rawValue).tag(mode)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .padding(.vertical, 4)
+
+                if we.targetMode == .simple {
+                    TextField("Enter target note…", text: Binding(
+                        get: { we.targetNote ?? "" },
+                        set: { we.targetNote = $0 }
+                    ))
+                    .textFieldStyle(.roundedBorder)
+                } else {
+                    AdvancedTargetSetsView(we: we)
+                }
+            }
+            .padding(.top, 4)
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+// MARK: - Main Create Workout View
 struct CreateWorkoutView: View {
     @Bindable var workout: Workout
     var isNewWorkout: Bool
     @Binding var isNavBarHidden: Bool
     var workoutCategory: WorkoutCategory
     var onSave: ((Workout) -> Void)?
-    
+
     @Environment(\.dismiss) var dismiss
     @Environment(\.modelContext) private var context
-    
+
     @State private var selectedExercises: Set<Exercise>
-    
+
     init(workout: Workout, isNewWorkout: Bool, isNavBarHidden: Binding<Bool>, workoutCategory: WorkoutCategory = .resistance, onSave: ((Workout) -> Void)? = nil) {
         self._workout = Bindable(workout)
         self.isNewWorkout = isNewWorkout
@@ -98,16 +171,14 @@ struct CreateWorkoutView: View {
         self.onSave = onSave
         _selectedExercises = State(initialValue: Set(workout.workoutExercises.map { $0.exercise }))
     }
-    
+
     var body: some View {
-        Form {
-            // Workout Name
+        List {
             Section("Workout Name") {
                 TextField("Title", text: $workout.title)
             }
-            
-            // Category Section
-            Section(header: Text("Category")) {
+
+            Section("Category") {
                 Picker("Category", selection: $workout.category) {
                     ForEach(WorkoutCategory.allCases) { category in
                         Text(category.rawValue).tag(category)
@@ -115,26 +186,25 @@ struct CreateWorkoutView: View {
                 }
                 .pickerStyle(.segmented)
                 .disabled(!selectedExercises.isEmpty)
-                
+
                 if !selectedExercises.isEmpty {
-                    HStack {
-                        Spacer()
-                        Text("Category locked - remove all exercises to change")
-                            .font(.footnote)
-                            .foregroundColor(.gray)
-                        Spacer()
-                    }
+                    Text("Category locked - remove all exercises to change")
+                        .font(.footnote)
+                        .foregroundColor(.gray)
+                        .frame(maxWidth: .infinity, alignment: .center)
                 }
             }
 
-            // Exercises Section
             Section("Exercises") {
-                NavigationLink("Add Exercises") {
+                NavigationLink {
                     ExerciseSelectionView(
                         selectedExercises: $selectedExercises,
                         workoutCategory: workout.category,
                         isNavBarHidden: $isNavBarHidden
                     )
+                } label: {
+                    Label("Add Exercises", systemImage: "plus.circle.fill")
+                        .labelStyle(.titleAndIcon)
                 }
 
                 if !workout.workoutExercises.isEmpty {
@@ -148,43 +218,36 @@ struct CreateWorkoutView: View {
                 }
             }
         }
-        .scrollContentBackground(.hidden)
-        .background(Color("Background"))
+        .listStyle(.plain)
+        .tint(.black)
         .navigationTitle(isNewWorkout ? "New Workout" : "Edit Workout")
-        
-        // MARK: Toolbar
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Save") {
-                    // Clear old workout exercises
-                    workout.workoutExercises.removeAll()
-                    
-                    // Create & insert new WorkoutExercises ✅
+                    for oldWE in workout.workoutExercises {
+                        context.delete(oldWE)
+                    }
+
                     let newWorkoutExercises = Array(selectedExercises)
                         .sorted(by: { $0.name < $1.name })
                         .enumerated()
                         .map { index, exercise in
-                            let we = WorkoutExercise(
+                            WorkoutExercise(
                                 notes: nil,
                                 targetNote: nil,
                                 order: index,
                                 workout: workout,
                                 exercise: exercise
                             )
-                            context.insert(we) // ✅ important
-                            return we
                         }
-                    
+
                     workout.workoutExercises = newWorkoutExercises
-                    
                     onSave?(workout)
                     dismiss()
                 }
                 .disabled(workout.title.trimmingCharacters(in: .whitespaces).isEmpty)
             }
         }
-        
-        // MARK: Nav Bar handling
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                 withAnimation(.easeInOut(duration: 0.3)) {
@@ -197,14 +260,16 @@ struct CreateWorkoutView: View {
                 isNavBarHidden = false
             }
         }
-        
-        // MARK: Exercise Selection Handling
         .onChange(of: selectedExercises) {
+            for oldWE in workout.workoutExercises {
+                context.delete(oldWE)
+            }
+
             workout.workoutExercises = selectedExercises
                 .sorted(by: { $0.name < $1.name })
                 .enumerated()
                 .map { index, exercise in
-                    let we = WorkoutExercise(
+                    WorkoutExercise(
                         notes: nil,
                         targetNote: nil,
                         targetMode: .simple,
@@ -212,19 +277,19 @@ struct CreateWorkoutView: View {
                         workout: workout,
                         exercise: exercise
                     )
-                    context.insert(we) // ✅ ensure inserted
-                    return we
                 }
         }
     }
 }
 
-// MARK: - Preview
 #Preview {
     @Previewable @State var isNavBarHidden = false
 
+    // Seed data so the UI renders immediately
     let workout = Workout(title: "Example", category: .resistance)
 
+
+    
     let bench = Exercise(name: "Bench Press", category: .resistance, subCategory: .chest)
     let squat = Exercise(name: "Back Squat", category: .resistance, subCategory: .legs)
 
@@ -245,7 +310,56 @@ struct CreateWorkoutView: View {
         workout: workout,
         exercise: squat
     )
+    
 
+    
+    
+//    let run = Exercise(name: "Run", category: .cardio)
+//    let bike = Exercise(name: "Bike", category: .cardio)
+//    
+//    let we1 = WorkoutExercise(
+//        notes: "Elbows tucked",
+//        targetNote: "3×10 @ 135 lbs",
+//        targetMode: .simple,
+//        order: 0,
+//        workout: workout,
+//        exercise: run
+//    )
+//
+//    let we2 = WorkoutExercise(
+//        notes: "Elbows tucked",
+//        targetNote: "3×10 @ 135 lbs",
+//        targetMode: .advanced,
+//        order: 1,
+//        workout: workout,
+//        exercise: bike
+//    )
+    
+    
+    
+//    let pushup = Exercise(name: "Pushup", category: .resistance, isBodyweight: true)
+//    let pullup = Exercise(name: "Pullup", category: .resistance, isBodyweight: true)
+//
+//    let we1 = WorkoutExercise(
+//        notes: "Elbows tucked",
+//        targetNote: "3×10 @ 135 lbs",
+//        targetMode: .simple,
+//        order: 0,
+//        workout: workout,
+//        exercise: pushup
+//    )
+//
+//    let we2 = WorkoutExercise(
+//        notes: nil,
+//        targetNote: nil,
+//        targetMode: .advanced,
+//        order: 1,
+//        workout: workout,
+//        exercise: pullup
+//    )
+
+   
+    
     workout.workoutExercises = [we1, we2]
 
     return CreateWorkoutView(
@@ -255,3 +369,4 @@ struct CreateWorkoutView: View {
         workoutCategory: .resistance
     )
 }
+

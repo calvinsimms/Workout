@@ -53,9 +53,9 @@ extension SetType {
         case .resistance:
             return [.weight, .reps, .rpe]
         case .cardio:
-            return [.duration, .distance, .resistance, .heartRate, .rpe]
+            return [.duration, .distance, .heartRate, .resistance]
         case .bodyweight:
-            return [.reps, .rpe]   // <- as you requested
+            return [.reps, .rpe]
         }
     }
 }
