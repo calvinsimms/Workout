@@ -25,7 +25,7 @@ struct OptionalNumberField<T: LosslessStringConvertible & Numeric>: View {
                 }
             }
         ))
-        .textFieldStyle(.roundedBorder)
+        .textFieldStyle(.plain)
         .keyboardType(isDecimal ? .decimalPad : .numberPad)
         .frame(width: 70)
     }
@@ -97,25 +97,41 @@ struct AdvancedTargetSetsView: View {
                     } label: {
                         Image(systemName: "trash")
                     }
+                    .padding(5)
+                    .background(Color("Button").opacity(0.9))
+                    .cornerRadius(30)
+                    .shadow(radius: 2)
                     .buttonStyle(.plain)
+                    .padding(.trailing, 2)
                 }
-                
-                
-                
             }
 
-            Button {
-                let newSet = TargetSet(order: we.targetSets.count, workoutExercise: we)
-                modelContext.insert(newSet)
-                we.targetSets.append(newSet)
-            } label: {
-                Label("Add Set", systemImage: "plus.circle.fill")
-            }
-            .buttonStyle(.plain)
-            .labelStyle(.titleAndIcon)
+            HStack {
+                Spacer()
+                
+                Button {
+                    let newSet = TargetSet(order: we.targetSets.count, workoutExercise: we)
 
-            .padding(.top, 6)
+                    // ✅ Only insert if workout is already persisted
+                    if we.workout?.persistentModelID != nil {
+                        modelContext.insert(newSet)
+                    }
+
+                    we.targetSets.append(newSet)
+                } label: {
+                    Label("Add Set", systemImage: "plus.circle.fill")
+                }
+                .buttonStyle(.plain)
+                .labelStyle(.titleAndIcon)
+                .padding(6)
+                .background(Color("Button").opacity(0.9))
+                .cornerRadius(10)
+                .shadow(radius: 2)
+                
+                Spacer()
+            }
         }
+        .padding(.bottom, 5)
     }
 }
 
@@ -124,7 +140,7 @@ struct WorkoutExerciseTargetsEditor: View {
     @Bindable var we: WorkoutExercise
 
     var body: some View {
-        DisclosureGroup(we.exercise.name) {
+        DisclosureGroup {
             VStack(alignment: .leading, spacing: 8) {
                 Picker("Targets", selection: $we.targetMode) {
                     ForEach(TargetMode.allCases) { mode in
@@ -139,12 +155,16 @@ struct WorkoutExerciseTargetsEditor: View {
                         get: { we.targetNote ?? "" },
                         set: { we.targetNote = $0 }
                     ))
-                    .textFieldStyle(.roundedBorder)
+                    .textFieldStyle(.plain)
                 } else {
                     AdvancedTargetSetsView(we: we)
                 }
             }
             .padding(.top, 4)
+        } label: {
+            Text(we.exercise.name)
+                .font(.title3)
+                .bold()
         }
         .padding(.vertical, 4)
     }
@@ -162,6 +182,7 @@ struct CreateWorkoutView: View {
     @Environment(\.modelContext) private var context
 
     @State private var selectedExercises: Set<Exercise>
+    @State private var didSave = false // ✅ Track if user saved
 
     init(workout: Workout, isNewWorkout: Bool, isNavBarHidden: Binding<Bool>, workoutCategory: WorkoutCategory = .resistance, onSave: ((Workout) -> Void)? = nil) {
         self._workout = Bindable(workout)
@@ -173,57 +194,92 @@ struct CreateWorkoutView: View {
     }
 
     var body: some View {
-        List {
-            Section("Workout Name") {
-                TextField("Title", text: $workout.title)
-            }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
 
-            Section("Category") {
-                Picker("Category", selection: $workout.category) {
-                    ForEach(WorkoutCategory.allCases) { category in
-                        Text(category.rawValue).tag(category)
+                // Workout Name Section
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("WORKOUT NAME")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    TextField("Title", text: $workout.title)
+                        .textFieldStyle(.plain)
+                }
+
+                Divider()
+
+                // Category Section
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("CATERGORY")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    Picker("Category", selection: $workout.category) {
+                        ForEach(WorkoutCategory.allCases) { category in
+                            Text(category.rawValue).tag(category)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .disabled(!selectedExercises.isEmpty)
+
+                    if !selectedExercises.isEmpty {
+                        Text("Category locked - remove all exercises to change")
+                            .font(.footnote)
+                            .foregroundColor(.gray)
+                            .frame(maxWidth: .infinity, alignment: .center)
                     }
                 }
-                .pickerStyle(.segmented)
-                .disabled(!selectedExercises.isEmpty)
 
-                if !selectedExercises.isEmpty {
-                    Text("Category locked - remove all exercises to change")
-                        .font(.footnote)
-                        .foregroundColor(.gray)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                }
-            }
+                Divider()
 
-            Section("Exercises") {
-                NavigationLink {
-                    ExerciseSelectionView(
-                        selectedExercises: $selectedExercises,
-                        workoutCategory: workout.category,
-                        isNavBarHidden: $isNavBarHidden
-                    )
-                } label: {
-                    Label("Add Exercises", systemImage: "plus.circle.fill")
-                        .labelStyle(.titleAndIcon)
-                }
+                // Exercises Section
+                VStack(alignment: .leading) {
+                    Text("EXERCISES")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity, alignment: .leading)
 
-                if !workout.workoutExercises.isEmpty {
-                    ForEach(workout.workoutExercises.sorted(by: { $0.order < $1.order })) { we in
-                        WorkoutExerciseTargetsEditor(we: we)
+                    NavigationLink {
+                        ExerciseSelectionView(
+                            selectedExercises: $selectedExercises,
+                            workoutCategory: workout.category,
+                            isNavBarHidden: $isNavBarHidden
+                        )
+                    } label: {
+                        Label("Add Exercises", systemImage: "plus.circle.fill")
+                            .labelStyle(.titleAndIcon)
+                            .padding(.vertical, 5)
                     }
-                } else if !selectedExercises.isEmpty {
-                    Text("Targets will appear here after creating Workout Exercises.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
+                    
+                    Divider()
+                        
+                    if !workout.workoutExercises.isEmpty {
+                        VStack() {
+                            ForEach(workout.workoutExercises.sorted(by: { $0.order < $1.order })) { we in
+                                WorkoutExerciseTargetsEditor(we: we)
+
+                                if we.id != workout.workoutExercises.sorted(by: { $0.order < $1.order }).last?.id {
+                                    Divider()
+                                }
+                            }
+                        }
+                    } else if !selectedExercises.isEmpty {
+                        Text("Targets will appear here after creating Workout Exercises.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
+            .padding(.horizontal, 20)
         }
-        .listStyle(.plain)
+        .background(Color("Background"))
         .tint(.black)
+
         .navigationTitle(isNewWorkout ? "New Workout" : "Edit Workout")
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Save") {
+                    didSave = true
                     for oldWE in workout.workoutExercises {
                         context.delete(oldWE)
                     }
@@ -249,6 +305,10 @@ struct CreateWorkoutView: View {
             }
         }
         .onAppear {
+            if isNewWorkout {
+                context.insert(workout)
+            }
+
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                 withAnimation(.easeInOut(duration: 0.3)) {
                     isNavBarHidden = true
@@ -258,6 +318,11 @@ struct CreateWorkoutView: View {
         .onDisappear {
             withAnimation(.easeInOut(duration: 0.3)) {
                 isNavBarHidden = false
+            }
+
+            if isNewWorkout && !didSave {
+                context.delete(workout)
+                try? context.save()
             }
         }
         .onChange(of: selectedExercises) {

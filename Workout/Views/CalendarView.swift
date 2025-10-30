@@ -484,8 +484,8 @@ struct CalendarView: View {
             // Refresh events when the sheet is closed
             viewModel.fetchEventsForCurrentMonth()
         }) {
-            AddWorkoutEventView(defaultDate: selectedDate)
-                .presentationDetents([.medium])
+            WorkoutSelectionView(defaultDate: selectedDate)
+                .presentationDetents([.large])
         }
         // MARK: - Inject Real ModelContext
         // Replace the temporary preview context with the real environment context.

@@ -210,32 +210,6 @@ struct WorkoutListView: View {
                                 moveWorkoutsForCategory(source, destination, category: category)
                             }
                             
-                            NavigationLink(
-                                destination: CreateWorkoutView(
-                                    workout: Workout(title: "", order: 0, category: category),
-                                   isNewWorkout: true,
-                                   isNavBarHidden: $isNavBarHidden,
-                                   workoutCategory: category,
-                                   onSave: { workout in
-                                       addWorkout(workout)
-                                       newWorkout = Workout(title: "", order: 0)
-                                   }
-                               )
-                           ) {
-                               HStack {
-                                   Image(systemName: "plus.circle.fill")
-
-                                   Text("Add \(category.rawValue.capitalized) Workout")
-                                       .font(.title3)
-                                       .fontWeight(.semibold)
-                                       .foregroundColor(.black)
-                                       .padding(.vertical, 10)
-                               }
-                         
-                           }
-                           .listRowBackground(Color("Background"))
-
-                            
                         } label: {
                             Text(category.rawValue)
                                 .font(.title3.bold())
