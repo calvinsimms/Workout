@@ -67,12 +67,9 @@ struct WorkoutListView: View {
                     Image(systemName: isEditing ? "checkmark" : "pencil")
                         .font(.title2)
                         .foregroundColor(workouts.isEmpty ? Color("Grayout") : .black)
-                        .padding(10)
-                        .background(Color("Button").opacity(0.9))
-                        .cornerRadius(30)
-                        .shadow(radius: 2)
-                        .padding(.bottom, 10)
+                        .padding(12)
                 }
+                .glassEffect(.regular.interactive())
                 .disabled(workouts.isEmpty)
                 
                 Spacer()
@@ -82,7 +79,7 @@ struct WorkoutListView: View {
                     .font(.title)
                     .fontWeight(.bold)
                     .foregroundColor(.black)
-                    .padding(.bottom, 20)
+                    .padding(.bottom, 10)
                     .padding(.top, 10)
                 
                 Spacer()
@@ -103,15 +100,14 @@ struct WorkoutListView: View {
                     Image(systemName: "plus")
                         .font(.title2)
                         .foregroundColor(.black)
-                        .padding(10)
-                        .background(Color("Button").opacity(0.9))
-                        .clipShape(Circle())
-                        .shadow(radius: 2)
-                        .padding(.bottom, 10)
+                        .padding(12)
                 }
+                .glassEffect(.regular.interactive())
+                
             }
             .padding(.horizontal, 20)
-            
+            .padding(.bottom, 10)
+
             Divider()
             
             // MARK: - Workout List
@@ -122,15 +118,14 @@ struct WorkoutListView: View {
                         .font(.title2)
                         .fontWeight(.bold)
                         .foregroundColor(.black)
-                        .padding(.bottom, 15)
-                        .padding(.top, 5)
+                        .padding(.vertical, 10)
                 ) {
                     if todaysEvents.isEmpty {
                         Text("No workouts planned today")
                             .foregroundColor(.gray)
                             .italic()
                             .padding(.horizontal, 20)
-                            .padding(.vertical, 10)
+                            .padding(.vertical, 5)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .listRowBackground(Color("Background"))
                     } else {
@@ -149,7 +144,7 @@ struct WorkoutListView: View {
                                     }
                                 }
                                 .padding(.horizontal, 20)
-                                .padding(.vertical, 10)
+                                .padding(.vertical, 5)
                             }
                             .listRowBackground(Color("Background"))
                         }
@@ -161,7 +156,8 @@ struct WorkoutListView: View {
                         .font(.title2)
                         .fontWeight(.bold)
                         .foregroundColor(.black)
-                        .padding(.bottom, 15)
+                        .padding(.top, 5)
+                        .padding(.bottom, 10)
                 ) {
                     
                     // Sections for each workout category
@@ -214,7 +210,7 @@ struct WorkoutListView: View {
                             Text(category.rawValue)
                                 .font(.title3.bold())
                                 .foregroundColor(.black)
-                                .padding(.vertical, 10)
+                                .padding(.vertical, 5)
                         }
                         .listRowBackground(Color("Background"))
                         .tint(.black)
@@ -235,6 +231,7 @@ struct WorkoutListView: View {
         .background(Color("Background"))
         .onAppear {
             fetchTodaysEvents()
+            
         }
     }
     

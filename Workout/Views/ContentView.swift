@@ -44,50 +44,61 @@ struct ContentView: View {
     @State private var isNavBarHidden = false
     
     
-    // MARK: - Body
+    
     var body: some View {
-           NavigationStack {
-               ZStack(alignment: .bottom) {
-                   // MARK: - Main Tab Views
-                   switch selectedTab {
-                   case "Workouts":
-                       WorkoutListView(
-                           workouts: workouts,
-                           addWorkout: addWorkout,
-                           deleteWorkouts: deleteWorkouts,
-                           moveWorkouts: moveWorkouts,
-                           isNavBarHidden: $isNavBarHidden
-                       )
+        TabView(selection: $selectedTab) {
+            
+            // MARK: - Workouts
+            NavigationStack {
+                WorkoutListView(
+                    workouts: workouts,
+                    addWorkout: addWorkout,
+                    deleteWorkouts: deleteWorkouts,
+                    moveWorkouts: moveWorkouts,
+                    isNavBarHidden: $isNavBarHidden
+                )
+            }
+            .tabItem {
+                Label("Workouts", systemImage: "list.bullet.rectangle")
+            }
+            .tag("Workouts")
+            
+            
+            // MARK: - Calendar
+            NavigationStack {
+                CalendarView()
+            }
+            .tabItem {
+                Label("Calendar", systemImage: "calendar")
+            }
+            .tag("Calendar")
+            
+            
+            // MARK: - Statistics
+            NavigationStack {
+                StatsView()
+            }
+            .tabItem {
+                Label("Statistics", systemImage: "chart.xyaxis.line")
+            }
+            .tag("Statistics")
+            
+            
+            // MARK: - Settings
+            NavigationStack {
+                SettingsView()
+            }
+            .tabItem {
+                Label("Settings", systemImage: "gearshape")
+            }
+            .tag("Settings")
+        }
+        .tint(.black)
+        .onAppear {
+            seedDefaultExercisesIfNeeded()
+        }
 
-                   case "Calendar":
-                       CalendarView()
-
-                   case "Statistics":
-                       StatsView()
-
-                   case "Settings":
-                       SettingsView()
-
-                   default:
-                       EmptyView()
-                   }
-
-                   // MARK: - Custom Nav Bar (now inside the same stack)
-                   if !isNavBarHidden {
-                       ButtonNavBar(selectedTab: $selectedTab)
-                           .transition(
-                               .move(edge: .bottom)
-                               .combined(with: .opacity)
-                           )
-                           .animation(.easeInOut, value: isNavBarHidden)
-                   }
-               }
-               .background(Color("Background").ignoresSafeArea())
-               .onAppear {
-                   seedDefaultExercisesIfNeeded()
-               }
-           }
-       }
+    }
     
     // MARK: - Data Management Methods
     

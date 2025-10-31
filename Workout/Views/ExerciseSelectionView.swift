@@ -70,12 +70,10 @@ struct ExerciseSelectionView: View {
                     Image(systemName: "pencil")
                         .font(.title2)
                         .foregroundColor(.black)
-                        .padding(10)
-                        .background(Color("Button").opacity(0.9))
-                        .clipShape(Circle())
-                        .shadow(radius: 2)
-                        .padding(.bottom, 10)
+                        .padding(12)
                 }
+                .glassEffect(.regular.interactive())
+
                 
                 Spacer()
                 
@@ -84,7 +82,7 @@ struct ExerciseSelectionView: View {
                     .font(.title)
                     .fontWeight(.bold)
                     .foregroundColor(.black)
-                    .padding(.bottom, 20)
+                    .padding(.bottom, 10)
                     .padding(.top, 10)
                 
                 Spacer()
@@ -97,14 +95,15 @@ struct ExerciseSelectionView: View {
                     Image(systemName: "plus")
                         .font(.title2)
                         .foregroundColor(.black)
-                        .padding(10)
-                        .background(Color("Button").opacity(0.9))
+                        .padding(12)
                         .clipShape(Circle())
-                        .shadow(radius: 2)
-                        .padding(.bottom, 10)
                 }
+                .glassEffect(.regular.interactive())
+
             }
             .padding(.horizontal, 20)
+            .padding(.bottom, 10)
+
             
             Divider()
             
@@ -139,7 +138,7 @@ struct ExerciseSelectionView: View {
                         } label: {
                             Text(sub.rawValue)
                                 .font(.title2)
-                                .padding(.vertical, 10)
+                                .padding(.vertical, 5)
                                 .fontWeight(.bold)
                                 .foregroundColor(.black)
                         }
@@ -175,13 +174,9 @@ struct ExerciseSelectionView: View {
                             .fontWeight(.bold)
                             .foregroundColor(.black)
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                            .background(
-                                RoundedRectangle(cornerRadius: 30)
-                                    .fill(Color("Button").opacity(0.9))
-                                    .shadow(radius: 2)
-                            )
+                            .padding(.vertical, 10)
                     }
+                    .buttonStyle(.glass)
                     .padding(.horizontal, 30)
                     .offset(y: showConfirmButton ? 0 : 100)
                     .opacity(showConfirmButton ? 1 : 0)
@@ -196,6 +191,8 @@ struct ExerciseSelectionView: View {
             }
             
         }
+        .toolbar(.hidden, for: .tabBar)
+
         .onAppear {
             isNavBarHidden = true
         }

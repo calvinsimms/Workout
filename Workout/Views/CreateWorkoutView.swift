@@ -167,6 +167,8 @@ struct WorkoutExerciseTargetsEditor: View {
                 .bold()
         }
         .padding(.vertical, 4)
+        .toolbar(.hidden, for: .tabBar)
+
     }
 }
 
@@ -274,6 +276,8 @@ struct CreateWorkoutView: View {
         }
         .background(Color("Background"))
         .tint(.black)
+        .toolbar(.hidden, for: .tabBar)
+
 
         .navigationTitle(isNewWorkout ? "New Workout" : "Edit Workout")
         .toolbar {

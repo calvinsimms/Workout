@@ -203,6 +203,9 @@ struct CustomCalendarGrid: View {
             // Displays the month and year (e.g., “October 2025”)
             // Includes navigation buttons to move between months.
             HStack {
+            
+                
+                
                 Text(viewModel.monthYearText())
                     .font(.title2)
                     .bold()
@@ -220,25 +223,33 @@ struct CustomCalendarGrid: View {
                     }
                 }
                 .font(.subheadline)
-                .padding(6)
-                .background(Color("Button").opacity(0.9))
-                .cornerRadius(10)
+                .bold()
                 .foregroundColor(.black)
-                .padding(.trailing, 20)
-                .shadow(radius: 2)
+                .buttonStyle(.glass)
+//                .padding(.trailing, 20)
+
+
                 
-                // Navigate to the previous month
-                Button("<") {
+                Button {
                     viewModel.moveMonth(by: -1)
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.subheadline.weight(.semibold))
                 }
-                .font(.title)
-                .padding(.trailing, 20)
+                .buttonStyle(.glass)
+//                .buttonBorderShape(.circle)
                 
-                // Navigate to the next month
-                Button(">") {
-                    viewModel.moveMonth(by: 1)
+                
+             
+                Button {
+                   viewModel.moveMonth(by: 1)
+                } label: {
+                   Image(systemName: "chevron.right")
+                       .font(.subheadline.weight(.semibold))
                 }
-                .font(.title)
+                .buttonStyle(.glass)
+//                .buttonBorderShape(.circle)
+                   
             }
             .padding(.horizontal, 20)
             .padding(.top, 10)
@@ -381,11 +392,9 @@ struct CalendarView: View {
                 Image(systemName: "pencil")
                     .font(.title2)
                     .foregroundColor(.black)
-                    .padding(10)
-                    .background(Color("Button").opacity(0.9))
-                    .cornerRadius(30)
-                    .shadow(radius: 2)
-                    .padding(.bottom, 10)
+                    .padding(12)
+                    .glassEffect(.regular.interactive())
+
                 
                 Spacer()
                 
@@ -393,7 +402,7 @@ struct CalendarView: View {
                     .font(.title)
                     .fontWeight(.bold)
                     .foregroundColor(.black)
-                    .padding(.bottom, 20)
+                    .padding(.bottom, 10)
                     .padding(.top, 10)
                 
                 Spacer()
@@ -405,14 +414,13 @@ struct CalendarView: View {
                     Image(systemName: "plus")
                         .font(.title2)
                         .foregroundColor(.black)
-                        .padding(10)
-                        .background(Color("Button").opacity(0.9))
-                        .cornerRadius(30)
-                        .shadow(radius: 2)
-                        .padding(.bottom, 10)
+                        .padding(12)
                 }
+                .glassEffect(.regular.interactive())
             }
             .padding(.horizontal, 20)
+            .padding(.bottom, 10)
+
             
             Divider()
             
@@ -440,7 +448,7 @@ struct CalendarView: View {
                                     .foregroundColor(.gray)
                             }
                         }
-                        .padding(.vertical, 10)
+                        .padding(.vertical, 5)
                         .listRowBackground(Color("Background"))
                     }
                     .onDelete { indexSet in
@@ -465,7 +473,7 @@ struct CalendarView: View {
                                 .font(.title3)
                                 .fontWeight(.semibold)
                                 .foregroundColor(.black)
-                                .padding(.vertical, 10)
+                                .padding(.vertical, 5)
                         }
                     }
                     .listRowBackground(Color("Background"))

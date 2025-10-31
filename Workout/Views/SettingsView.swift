@@ -58,7 +58,7 @@ struct SettingsView: View {
                                         
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.vertical, 10)
+                            .padding(.vertical, 5)
                             .buttonStyle(PlainButtonStyle())
                             .listRowBackground(Color("Background"))
                         }
