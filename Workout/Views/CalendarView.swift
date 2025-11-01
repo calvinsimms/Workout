@@ -251,8 +251,8 @@ struct CustomCalendarGrid: View {
 //                .buttonBorderShape(.circle)
                    
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 10)
+            .padding(.horizontal, 18)
+//            .padding(.top, 10)
             .padding(.bottom, 10)
             .foregroundStyle(.black)
             
@@ -385,125 +385,121 @@ struct CalendarView: View {
     
     // MARK: - Body
     var body: some View {
-        VStack(spacing: 0) {
+        NavigationStack {
             
-            // MARK: - Header
-            HStack {
-                Image(systemName: "pencil")
-                    .font(.title2)
-                    .foregroundColor(.black)
-                    .padding(12)
-                    .glassEffect(.regular.interactive())
-
+            VStack(spacing: 0) {
                 
-                Spacer()
+                // MARK: - Calendar Grid
+                // The calendar grid now highlights days with real WorkoutEvent data.
+                CustomCalendarGrid(
+                    viewModel: viewModel,
+                    selectedDate: $selectedDate
+                )
                 
-                Text("Calendar")
-                    .font(.title)
-                    .fontWeight(.bold)
-                    .foregroundColor(.black)
-                    .padding(.bottom, 10)
-                    .padding(.top, 10)
+                Divider()
                 
-                Spacer()
-                
-                // “Add Workout” button to schedule a new event.
-                Button {
-                    isAddWorkoutPresented = true
-                } label: {
-                    Image(systemName: "plus")
-                        .font(.title2)
-                        .foregroundColor(.black)
-                        .padding(12)
-                }
-                .glassEffect(.regular.interactive())
-            }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 10)
-
-            
-            Divider()
-            
-            // MARK: - Calendar Grid
-            // The calendar grid now highlights days with real WorkoutEvent data.
-            CustomCalendarGrid(
-                viewModel: viewModel,
-                selectedDate: $selectedDate
-            )
-            
-            Divider()
-            
-            // MARK: - Workout List for Selected Date
-            List {
-                let events = viewModel.events(on: selectedDate)
-                
-                Section {
-                    ForEach(events) { event in
-                        HStack {
-                            Text(event.workout.title)
-                                .font(.system(.title3, weight: .semibold))
-                            Spacer()
-                            if let time = event.startTime {
-                                Text(time.formatted(date: .omitted, time: .shortened))
-                                    .foregroundColor(.gray)
+                // MARK: - Workout List for Selected Date
+                List {
+                    let events = viewModel.events(on: selectedDate)
+                    
+                    Section {
+                        ForEach(events) { event in
+                            HStack {
+                                Text(event.workout.title)
+                                    .font(.system(.title3, weight: .semibold))
+                                Spacer()
+                                if let time = event.startTime {
+                                    Text(time.formatted(date: .omitted, time: .shortened))
+                                        .foregroundColor(.gray)
+                                }
+                            }
+                            .padding(.vertical, 5)
+                            .listRowBackground(Color("Background"))
+                        }
+                        .onDelete { indexSet in
+                            let allEvents = viewModel.events(on: selectedDate)
+                            let globalOffsets = IndexSet(indexSet.map { idx in
+                                viewModel.events.firstIndex(where: { $0.id == allEvents[idx].id })!
+                            })
+                            viewModel.deleteEvent(at: globalOffsets)
+                        }
+                        .onMove { source, destination in
+                            viewModel.moveEvent(from: source, to: destination)
+                        }
+                    }
+                    
+                    Section {
+                        Button {
+                            isAddWorkoutPresented = true
+                        } label: {
+                            HStack {
+                                Image(systemName: "plus.circle.fill")
+                                Text("Add Workout")
+                                    .font(.title3)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.black)
+                                    .padding(.vertical, 5)
                             }
                         }
-                        .padding(.vertical, 5)
                         .listRowBackground(Color("Background"))
                     }
-                    .onDelete { indexSet in
-                        let allEvents = viewModel.events(on: selectedDate)
-                        let globalOffsets = IndexSet(indexSet.map { idx in
-                            viewModel.events.firstIndex(where: { $0.id == allEvents[idx].id })!
-                        })
-                        viewModel.deleteEvent(at: globalOffsets)
-                    }
-                    .onMove { source, destination in
-                        viewModel.moveEvent(from: source, to: destination)
-                    }
+                }
+                .listStyle(.plain)
+                .safeAreaInset(edge: .bottom) {
+                    Color.clear.frame(height: 100)
+                }
+            }
+            .background(Color("Background"))
+            .colorScheme(.light)
+            .ignoresSafeArea(edges: .bottom)
+            .navigationTitle("Calendar")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                   EditButton()
+                       .foregroundColor(.black)
+                       .tint(.black)
+               
                 }
 
-                Section {
+//                ToolbarItem(placement: .principal) {
+//                        Text("Calendar")
+//                            .font(.title)
+//                            .fontWeight(.bold)
+//                            .foregroundColor(.black)
+//                }
+
+                ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
                         isAddWorkoutPresented = true
                     } label: {
                         HStack {
-                            Image(systemName: "plus.circle.fill")
-                            Text("Add Workout")
+                            Image(systemName: "plus")
                                 .font(.title3)
-                                .fontWeight(.semibold)
                                 .foregroundColor(.black)
-                                .padding(.vertical, 5)
                         }
                     }
-                    .listRowBackground(Color("Background"))
                 }
             }
-            .listStyle(.plain)
-            .safeAreaInset(edge: .bottom) {
-                Color.clear.frame(height: 100)
+//            .navigationBarTitleDisplayMode(.inline)
+
+            .sheet(isPresented: $isAddWorkoutPresented, onDismiss: {
+                // Refresh events when the sheet is closed
+                viewModel.fetchEventsForCurrentMonth()
+            }) {
+                WorkoutSelectionView(defaultDate: selectedDate)
+                    .presentationDetents([.large])
+            }
+            // MARK: - Inject Real ModelContext
+            // Replace the temporary preview context with the real environment context.
+            .onAppear {
+                viewModel.setContext(modelContext)
+                scheduleMidnightRefresh()
+            }
+            .onDisappear {
+                refreshTask?.cancel()
             }
         }
-        .background(Color("Background"))
-        .colorScheme(.light)
-        .ignoresSafeArea(edges: .bottom)
         
-        .sheet(isPresented: $isAddWorkoutPresented, onDismiss: {
-            // Refresh events when the sheet is closed
-            viewModel.fetchEventsForCurrentMonth()
-        }) {
-            WorkoutSelectionView(defaultDate: selectedDate)
-                .presentationDetents([.large])
-        }
-        // MARK: - Inject Real ModelContext
-        // Replace the temporary preview context with the real environment context.
-        .onAppear {
-            viewModel.setContext(modelContext)
-            scheduleMidnightRefresh()
-        }
-        .onDisappear {
-            refreshTask?.cancel()
-        }
     }
     
     // MARK: - Midnight Refresh Scheduler

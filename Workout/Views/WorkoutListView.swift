@@ -51,187 +51,174 @@ struct WorkoutListView: View {
 
     // MARK: - Body
     var body: some View {
-        VStack(spacing: 0) {
-
-            // MARK: - Top Action Buttons
-            HStack {
-                // Edit mode toggle button
-                Button(action: {
-                    if !workouts.isEmpty {
-                        withAnimation {
-                            isEditing.toggle()
-                            editMode?.wrappedValue = isEditing ? .active : .inactive
-                        }
-                    }
-                }) {
-                    Image(systemName: isEditing ? "checkmark" : "pencil")
-                        .font(.title2)
-                        .foregroundColor(workouts.isEmpty ? Color("Grayout") : .black)
-                        .padding(12)
-                }
-                .glassEffect(.regular.interactive())
-                .disabled(workouts.isEmpty)
+        
+        NavigationStack {
+            VStack(spacing: 0) {
                 
-                Spacer()
                 
-                // Title
-                Text("Workouts")
-                    .font(.title)
-                    .fontWeight(.bold)
-                    .foregroundColor(.black)
-                    .padding(.bottom, 10)
-                    .padding(.top, 10)
                 
-                Spacer()
-                
-                // Button to create a new workout
-                NavigationLink(
-                    destination: CreateWorkoutView(
-                        workout: newWorkout,
-                        isNewWorkout: true,
-                        isNavBarHidden: $isNavBarHidden,
-                        workoutCategory: .resistance,
-                        onSave: { workout in
-                            addWorkout(workout)
-                            newWorkout = Workout(title: "", order: 0)
-                        }
-                    )
-                ) {
-                    Image(systemName: "plus")
-                        .font(.title2)
-                        .foregroundColor(.black)
-                        .padding(12)
-                }
-                .glassEffect(.regular.interactive())
-                
-            }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 10)
-
-            Divider()
-            
-            // MARK: - Workout List
-            List {
-                
-                // Section for today's planned workouts
-                Section(header: Text("Today's Workouts")
+                // MARK: - Workout List
+                List {
+                    
+                    // Section for today's planned workouts
+                    Section(header: Text("Today's Workouts")
                         .font(.title2)
                         .fontWeight(.bold)
                         .foregroundColor(.black)
-                        .padding(.vertical, 10)
-                ) {
-                    if todaysEvents.isEmpty {
-                        Text("No workouts planned today")
-                            .foregroundColor(.gray)
-                            .italic()
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 5)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .listRowBackground(Color("Background"))
-                    } else {
-                        ForEach(todaysEvents) { event in
-                            NavigationLink {
-                                WorkoutView(workout: event.workout, isNavBarHidden: $isNavBarHidden)
-                            } label: {
-                                HStack {
-                                    Text(event.workout.title)
-                                        .font(.title3.bold())
-                                        .foregroundColor(.black)
-                                    Spacer()
-                                    if let time = event.startTime {
-                                        Text(time.formatted(date: .omitted, time: .shortened))
-                                            .foregroundColor(.gray)
-                                    }
-                                }
+//                        .padding(.bottom, 10)
+                    ) {
+                        if todaysEvents.isEmpty {
+                            Text("No workouts planned today")
+                                .foregroundColor(.gray)
+                                .italic()
                                 .padding(.horizontal, 20)
                                 .padding(.vertical, 5)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .listRowBackground(Color("Background"))
+                        } else {
+                            ForEach(todaysEvents) { event in
+                                NavigationLink {
+                                    WorkoutView(workout: event.workout, isNavBarHidden: $isNavBarHidden)
+                                } label: {
+                                    HStack {
+                                        Text(event.workout.title)
+                                            .font(.title3.bold())
+                                            .foregroundColor(.black)
+                                        Spacer()
+                                        if let time = event.startTime {
+                                            Text(time.formatted(date: .omitted, time: .shortened))
+                                                .foregroundColor(.gray)
+                                        }
+                                    }
+                                    .padding(.horizontal, 20)
+                                    .padding(.vertical, 5)
+                                }
+                                .listRowBackground(Color("Background"))
                             }
-                            .listRowBackground(Color("Background"))
                         }
                     }
-                }
-                
-                // Section for saved workouts (currently empty, can be expanded)
-                Section(header: Text("Saved Workouts")
+                    
+                    // Section for saved workouts (currently empty, can be expanded)
+                    Section(header: Text("Saved Workouts")
                         .font(.title2)
                         .fontWeight(.bold)
                         .foregroundColor(.black)
-                        .padding(.top, 5)
-                        .padding(.bottom, 10)
-                ) {
-                    
-                    // Sections for each workout category
-                    ForEach(WorkoutCategory.allCases) { category in
-                        DisclosureGroup(
-                            isExpanded: Binding(
-                                get: { expandedCategories.contains(category) },
-                                set: { isExpanded in
-                                    withAnimation {
-                                        if isExpanded {
-                                            expandedCategories.insert(category)
-                                        } else {
-                                            expandedCategories.remove(category)
+//                        .padding(.top, 5)
+//                        .padding(.bottom, 10)
+                    ) {
+                        
+                        // Sections for each workout category
+                        ForEach(WorkoutCategory.allCases) { category in
+                            DisclosureGroup(
+                                isExpanded: Binding(
+                                    get: { expandedCategories.contains(category) },
+                                    set: { isExpanded in
+                                        withAnimation {
+                                            if isExpanded {
+                                                expandedCategories.insert(category)
+                                            } else {
+                                                expandedCategories.remove(category)
+                                            }
                                         }
                                     }
-                                }
-                            )
-                        ) {
-                            let categoryWorkouts = workouts.filter { $0.category == category }
-                        
-                            // Show the list of workouts for this category
-                            ForEach(categoryWorkouts) { workout in
-                                NavigationLink {
-                                    WorkoutView(workout: workout, isNavBarHidden: $isNavBarHidden)
-                                } label: {
-                                    HStack {
-                                        Text(workout.title)
-                                            .font(.title3.bold())
-                                            .foregroundColor(.black)
-                                            .padding(.horizontal, 20)
-                                        Spacer()
-                                    }
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .padding(.vertical, 10)
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                                .listRowBackground(Color("Background"))
-                                .listRowInsets(EdgeInsets(top: 10, leading: 0, bottom: 10, trailing: 15))
-                                .tint(.black)
+                                )
+                            ) {
+                                let categoryWorkouts = workouts.filter { $0.category == category }
                                 
+                                // Show the list of workouts for this category
+                                ForEach(categoryWorkouts) { workout in
+                                    NavigationLink {
+                                        WorkoutView(workout: workout, isNavBarHidden: $isNavBarHidden)
+                                    } label: {
+                                        HStack {
+                                            Text(workout.title)
+                                                .font(.title3.bold())
+                                                .foregroundColor(.black)
+                                                .padding(.horizontal, 20)
+                                            Spacer()
+                                        }
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .padding(.vertical, 10)
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                    .listRowBackground(Color("Background"))
+                                    .listRowInsets(EdgeInsets(top: 10, leading: 0, bottom: 10, trailing: 15))
+                                    .tint(.black)
+                                    
+                                }
+                                .onDelete { offsets in
+                                    deleteWorkoutsForCategory(offsets, category: category)
+                                }
+                                .onMove { source, destination in
+                                    moveWorkoutsForCategory(source, destination, category: category)
+                                }
+                                
+                            } label: {
+                                Text(category.rawValue)
+                                    .font(.title3.bold())
+                                    .foregroundColor(.black)
+                                    .padding(.vertical, 5)
                             }
-                            .onDelete { offsets in
-                                deleteWorkoutsForCategory(offsets, category: category)
-                            }
-                            .onMove { source, destination in
-                                moveWorkoutsForCategory(source, destination, category: category)
-                            }
+                            .listRowBackground(Color("Background"))
+                            .tint(.black)
+                            .padding(.leading, 20)
                             
-                        } label: {
-                            Text(category.rawValue)
-                                .font(.title3.bold())
-                                .foregroundColor(.black)
-                                .padding(.vertical, 5)
                         }
-                        .listRowBackground(Color("Background"))
-                        .tint(.black)
-                        .padding(.leading, 20)
-
                     }
+                    
+                }
+                .listStyle(GroupedListStyle())
+                .listSectionSpacing(.compact)
+                .scrollContentBackground(.hidden)
+                .environment(\.editMode, editMode)
+                
+                .safeAreaInset(edge: .bottom) {
+                    Color.clear.frame(height: 60)
+                }
+            }
+            .background(Color("Background"))
+            .onAppear {
+                fetchTodaysEvents()
+                
+            }
+            .navigationTitle("Workouts") // Set the title here
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                   if !workouts.isEmpty {
+                       EditButton() // Use the system-provided EditButton
+                           .foregroundColor(.black)
+                           .tint(.black)
+                   }
                 }
 
+//                ToolbarItem(placement: .principal) {
+//                        Text("Workouts")
+//                            .font(.title)
+//                            .fontWeight(.bold)
+//                            .foregroundColor(.black)
+//                }
+
+                ToolbarItem(placement: .navigationBarTrailing) {
+                   NavigationLink(
+                       destination: CreateWorkoutView(
+                           workout: newWorkout,
+                           isNewWorkout: true,
+                           isNavBarHidden: $isNavBarHidden,
+                           workoutCategory: .resistance,
+                           onSave: { workout in
+                               addWorkout(workout)
+                               newWorkout = Workout(title: "", order: 0)
+                           }
+                       )
+                   ) {
+                       Image(systemName: "plus")
+                           .font(.title3)
+                           .foregroundColor(.black)
+                   }
+                }
             }
-            .listStyle(GroupedListStyle())
-            .listSectionSpacing(.compact)
-            .scrollContentBackground(.hidden)
-            .environment(\.editMode, editMode)
-            .safeAreaInset(edge: .bottom) {
-                Color.clear.frame(height: 60)
-            }
-        }
-        .background(Color("Background"))
-        .onAppear {
-            fetchTodaysEvents()
-            
+//            .navigationBarTitleDisplayMode(.inline)
+
         }
     }
     

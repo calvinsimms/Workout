@@ -59,7 +59,7 @@ struct ContentView: View {
                 )
             }
             .tabItem {
-                Label("Workouts", systemImage: "list.bullet.rectangle")
+                Label("Workouts", systemImage: "dumbbell")
             }
             .tag("Workouts")
             
@@ -79,9 +79,17 @@ struct ContentView: View {
                 StatsView()
             }
             .tabItem {
-                Label("Statistics", systemImage: "chart.xyaxis.line")
+                Label("Statistics", systemImage: "chart.bar")
             }
             .tag("Statistics")
+            
+            NavigationStack {
+                CoachingView()
+            }
+            .tabItem {
+                Label("Coaching", systemImage: "list.clipboard")
+            }
+            .tag("Coaching")
             
             
             // MARK: - Settings
