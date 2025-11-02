@@ -176,7 +176,6 @@ struct WorkoutExerciseTargetsEditor: View {
 struct CreateWorkoutView: View {
     @Bindable var workout: Workout
     var isNewWorkout: Bool
-    @Binding var isNavBarHidden: Bool
     var workoutCategory: WorkoutCategory
     var onSave: ((Workout) -> Void)?
 
@@ -186,10 +185,9 @@ struct CreateWorkoutView: View {
     @State private var selectedExercises: Set<Exercise>
     @State private var didSave = false // ✅ Track if user saved
 
-    init(workout: Workout, isNewWorkout: Bool, isNavBarHidden: Binding<Bool>, workoutCategory: WorkoutCategory = .resistance, onSave: ((Workout) -> Void)? = nil) {
+    init(workout: Workout, isNewWorkout: Bool, workoutCategory: WorkoutCategory = .resistance, onSave: ((Workout) -> Void)? = nil) {
         self._workout = Bindable(workout)
         self.isNewWorkout = isNewWorkout
-        self._isNavBarHidden = isNavBarHidden
         self.workoutCategory = workoutCategory
         self.onSave = onSave
         _selectedExercises = State(initialValue: Set(workout.workoutExercises.map { $0.exercise }))
@@ -244,8 +242,7 @@ struct CreateWorkoutView: View {
                     NavigationLink {
                         ExerciseSelectionView(
                             selectedExercises: $selectedExercises,
-                            workoutCategory: workout.category,
-                            isNavBarHidden: $isNavBarHidden
+                            workoutCategory: workout.category
                         )
                     } label: {
                         Label("Add Exercises", systemImage: "plus.circle.fill")
@@ -312,17 +309,8 @@ struct CreateWorkoutView: View {
             if isNewWorkout {
                 context.insert(workout)
             }
-
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                withAnimation(.easeInOut(duration: 0.3)) {
-                    isNavBarHidden = true
-                }
-            }
         }
         .onDisappear {
-            withAnimation(.easeInOut(duration: 0.3)) {
-                isNavBarHidden = false
-            }
 
             if isNewWorkout && !didSave {
                 context.delete(workout)
@@ -352,7 +340,6 @@ struct CreateWorkoutView: View {
 }
 
 #Preview {
-    @Previewable @State var isNavBarHidden = false
 
     // Seed data so the UI renders immediately
     let workout = Workout(title: "Example", category: .resistance)
@@ -434,7 +421,6 @@ struct CreateWorkoutView: View {
     return CreateWorkoutView(
         workout: workout,
         isNewWorkout: true,
-        isNavBarHidden: $isNavBarHidden,
         workoutCategory: .resistance
     )
 }

@@ -47,9 +47,6 @@ struct ExerciseSelectionView: View {
     // Passed from the parent view (e.g., CreateWorkoutView) so that only
     // exercises matching this type (Resistance, Cardio, or Other) appear in the list.
     var workoutCategory: WorkoutCategory
-    
-    /// Binding to control visibility of the parent navigation bar.
-    @Binding var isNavBarHidden: Bool
 
     // Computed property that filters all stored exercises based on the selected
     // workout category. This ensures the user only sees relevant exercises
@@ -192,13 +189,6 @@ struct ExerciseSelectionView: View {
             
         }
         .toolbar(.hidden, for: .tabBar)
-
-        .onAppear {
-            isNavBarHidden = true
-        }
-        .onDisappear {
-            isNavBarHidden = false
-        }
         // Background & Navigation Customization
         .background(Color("Background"))
         .toolbar {
@@ -263,12 +253,10 @@ struct ExerciseSelectionView: View {
 
 #Preview {
     @Previewable @State var selected: Set<Exercise> = []
-    @Previewable @State var isNavBarHidden = true
-
+    
     ExerciseSelectionView(
         selectedExercises: $selected,
-        workoutCategory: .resistance,
-        isNavBarHidden: $isNavBarHidden
+        workoutCategory: .resistance
     )
 }
 
