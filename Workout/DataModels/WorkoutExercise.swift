@@ -50,7 +50,9 @@ final class WorkoutExercise: Identifiable, Hashable {
     // MARK: - Relationships
     
     /// The parent workout that this record belongs to.
-    @Relationship var workout: Workout?
+    @Relationship var workoutTemplate: WorkoutTemplate?
+    
+    @Relationship var workoutEvent: WorkoutEvent?
     
     /// The exercise associated with this record.
     @Relationship var exercise: Exercise
@@ -63,13 +65,16 @@ final class WorkoutExercise: Identifiable, Hashable {
     @Relationship(deleteRule: .cascade) var targetSets: [TargetSet] = []
     
     // MARK: - Initializer
+    // MARK: - Initializers
+
+    /// Used when attaching to a WorkoutTemplate (e.g., predefined workouts)
     init(
         id: UUID = UUID(),
         notes: String? = nil,
         targetNote: String? = nil,
         targetMode: TargetMode = .simple,
         order: Int = 0,
-        workout: Workout,
+        workoutTemplate: WorkoutTemplate,
         exercise: Exercise
     ) {
         self.id = id
@@ -77,10 +82,33 @@ final class WorkoutExercise: Identifiable, Hashable {
         self.targetNote = targetNote
         self.targetMode = targetMode
         self.order = order
-        self.workout = workout
+        self.workoutTemplate = workoutTemplate
+        self.workoutEvent = nil
         self.exercise = exercise
         self.targetSets = []
     }
+
+    /// Used when attaching to a WorkoutEvent (e.g., logged sessions)
+    init(
+        id: UUID = UUID(),
+        notes: String? = nil,
+        targetNote: String? = nil,
+        targetMode: TargetMode = .simple,
+        order: Int = 0,
+        workoutEvent: WorkoutEvent,
+        exercise: Exercise
+    ) {
+        self.id = id
+        self.notes = notes
+        self.targetNote = targetNote
+        self.targetMode = targetMode
+        self.order = order
+        self.workoutTemplate = nil
+        self.workoutEvent = workoutEvent
+        self.exercise = exercise
+        self.targetSets = []
+    }
+
     
     // MARK: - Equatable & Hashable
     static func == (lhs: WorkoutExercise, rhs: WorkoutExercise) -> Bool {

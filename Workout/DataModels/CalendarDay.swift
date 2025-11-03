@@ -19,16 +19,16 @@ final class CalendarDay: Identifiable {
     var date: Date
     
     // Relationship to associated workouts. One CalendarDay can have multiple workouts
-    @Relationship var workouts: [Workout] = []
+    @Relationship var workoutTemplates: [WorkoutTemplate] = []
     
     // Initializer for creating a new CalendarDay
     // - Parameters:
     //   - id: Optional UUID. Defaults to a new UUID if not provided
     //   - date: The Date that this CalendarDay represents
     //   - workouts: Optional array of Workout objects. Defaults to empty
-    init(id: UUID = UUID(), date: Date, workouts: [Workout] = []) {
+    init(id: UUID = UUID(), date: Date, workoutTemplates: [WorkoutTemplate] = []) {
         self.id = id
         self.date = date
-        self.workouts = workouts
+        self.workoutTemplates = workoutTemplates
     }
 }

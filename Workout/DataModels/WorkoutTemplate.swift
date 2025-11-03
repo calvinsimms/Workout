@@ -38,7 +38,7 @@ enum WorkoutCategory: String, CaseIterable, Identifiable, Codable {
 
 // Define a SwiftData model for a Workout
 @Model
-final class Workout: Identifiable {
+final class WorkoutTemplate: Identifiable {
     // Unique identifier for each Workout instance to ensure no two workouts share the same UUID
     @Attribute(.unique) var id: UUID
     
@@ -54,10 +54,10 @@ final class Workout: Identifiable {
     
     // Each workout can have many events (sessions).
     // Cascade delete ensures removing a workout deletes its scheduled events.    
-    @Relationship(deleteRule: .cascade, inverse: \WorkoutEvent.workout)
+    @Relationship(deleteRule: .cascade, inverse: \WorkoutEvent.workoutTemplate)
     var events: [WorkoutEvent] = []
     
-    @Relationship(deleteRule: .cascade, inverse: \WorkoutExercise.workout)
+    @Relationship(deleteRule: .cascade, inverse: \WorkoutExercise.workoutTemplate)
     var workoutExercises: [WorkoutExercise] = []
     
     // Initializer for creating a new Workout

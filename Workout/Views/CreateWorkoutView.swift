@@ -69,9 +69,7 @@ struct AdvancedTargetSetsView: View {
 
                     ForEach(we.exercise.setType.relevantAttributes, id: \.self) { attribute in
                         attributeField(for: attribute, target: Binding(
-                            get: {
-                                target
-                            },
+                            get: { target },
                             set: { updated in
                                 if let i = we.targetSets.firstIndex(where: { $0.id == target.id }) {
                                     we.targetSets[i] = updated
@@ -85,12 +83,10 @@ struct AdvancedTargetSetsView: View {
                     Button(role: .destructive) {
                         modelContext.delete(target)
 
-                        // Remove from relationship array
                         if let index = we.targetSets.firstIndex(of: target) {
                             we.targetSets.remove(at: index)
                         }
 
-                        // Reorder remaining sets
                         for (i, set) in we.targetSets.sorted(by: { $0.order < $1.order }).enumerated() {
                             set.order = i
                         }
@@ -108,12 +104,10 @@ struct AdvancedTargetSetsView: View {
 
             HStack {
                 Spacer()
-                
                 Button {
                     let newSet = TargetSet(order: we.targetSets.count, workoutExercise: we)
 
-                    // ✅ Only insert if workout is already persisted
-                    if we.workout?.persistentModelID != nil {
+                    if we.workoutTemplate?.persistentModelID != nil {
                         modelContext.insert(newSet)
                     }
 
@@ -127,7 +121,6 @@ struct AdvancedTargetSetsView: View {
                 .background(Color("Button").opacity(0.9))
                 .cornerRadius(10)
                 .shadow(radius: 2)
-                
                 Spacer()
             }
         }
@@ -168,29 +161,28 @@ struct WorkoutExerciseTargetsEditor: View {
         }
         .padding(.vertical, 4)
         .toolbar(.hidden, for: .tabBar)
-
     }
 }
 
 // MARK: - Main Create Workout View
 struct CreateWorkoutView: View {
-    @Bindable var workout: Workout
+    @Bindable var workoutTemplate: WorkoutTemplate
     var isNewWorkout: Bool
     var workoutCategory: WorkoutCategory
-    var onSave: ((Workout) -> Void)?
+    var onSave: ((WorkoutTemplate) -> Void)?
 
     @Environment(\.dismiss) var dismiss
     @Environment(\.modelContext) private var context
 
     @State private var selectedExercises: Set<Exercise>
-    @State private var didSave = false // ✅ Track if user saved
+    @State private var didSave = false
 
-    init(workout: Workout, isNewWorkout: Bool, workoutCategory: WorkoutCategory = .resistance, onSave: ((Workout) -> Void)? = nil) {
-        self._workout = Bindable(workout)
+    init(workoutTemplate: WorkoutTemplate, isNewWorkout: Bool, workoutCategory: WorkoutCategory = .resistance, onSave: ((WorkoutTemplate) -> Void)? = nil) {
+        self._workoutTemplate = Bindable(workoutTemplate)
         self.isNewWorkout = isNewWorkout
         self.workoutCategory = workoutCategory
         self.onSave = onSave
-        _selectedExercises = State(initialValue: Set(workout.workoutExercises.map { $0.exercise }))
+        _selectedExercises = State(initialValue: Set(workoutTemplate.workoutExercises.map { $0.exercise }))
     }
 
     var body: some View {
@@ -203,7 +195,7 @@ struct CreateWorkoutView: View {
                         .font(.headline)
                         .frame(maxWidth: .infinity, alignment: .leading)
 
-                    TextField("Title", text: $workout.title)
+                    TextField("Title", text: $workoutTemplate.title)
                         .textFieldStyle(.plain)
                 }
 
@@ -215,7 +207,7 @@ struct CreateWorkoutView: View {
                         .font(.headline)
                         .frame(maxWidth: .infinity, alignment: .leading)
 
-                    Picker("Category", selection: $workout.category) {
+                    Picker("Category", selection: $workoutTemplate.category) {
                         ForEach(WorkoutCategory.allCases) { category in
                             Text(category.rawValue).tag(category)
                         }
@@ -242,7 +234,7 @@ struct CreateWorkoutView: View {
                     NavigationLink {
                         ExerciseSelectionView(
                             selectedExercises: $selectedExercises,
-                            workoutCategory: workout.category
+                            workoutCategory: workoutTemplate.category
                         )
                     } label: {
                         Label("Add Exercises", systemImage: "plus.circle.fill")
@@ -252,12 +244,12 @@ struct CreateWorkoutView: View {
                     
                     Divider()
                         
-                    if !workout.workoutExercises.isEmpty {
-                        VStack() {
-                            ForEach(workout.workoutExercises.sorted(by: { $0.order < $1.order })) { we in
+                    if !workoutTemplate.workoutExercises.isEmpty {
+                        VStack {
+                            ForEach(workoutTemplate.workoutExercises.sorted(by: { $0.order < $1.order })) { we in
                                 WorkoutExerciseTargetsEditor(we: we)
 
-                                if we.id != workout.workoutExercises.sorted(by: { $0.order < $1.order }).last?.id {
+                                if we.id != workoutTemplate.workoutExercises.sorted(by: { $0.order < $1.order }).last?.id {
                                     Divider()
                                 }
                             }
@@ -274,14 +266,12 @@ struct CreateWorkoutView: View {
         .background(Color("Background"))
         .tint(.black)
         .toolbar(.hidden, for: .tabBar)
-
-
         .navigationTitle(isNewWorkout ? "New Workout" : "Edit Workout")
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Save") {
                     didSave = true
-                    for oldWE in workout.workoutExercises {
+                    for oldWE in workoutTemplate.workoutExercises {
                         context.delete(oldWE)
                     }
 
@@ -293,36 +283,35 @@ struct CreateWorkoutView: View {
                                 notes: nil,
                                 targetNote: nil,
                                 order: index,
-                                workout: workout,
+                                workoutTemplate: workoutTemplate,
                                 exercise: exercise
                             )
                         }
 
-                    workout.workoutExercises = newWorkoutExercises
-                    onSave?(workout)
+                    workoutTemplate.workoutExercises = newWorkoutExercises
+                    onSave?(workoutTemplate)
                     dismiss()
                 }
-                .disabled(workout.title.trimmingCharacters(in: .whitespaces).isEmpty)
+                .disabled(workoutTemplate.title.trimmingCharacters(in: .whitespaces).isEmpty)
             }
         }
         .onAppear {
             if isNewWorkout {
-                context.insert(workout)
+                context.insert(workoutTemplate)
             }
         }
         .onDisappear {
-
             if isNewWorkout && !didSave {
-                context.delete(workout)
+                context.delete(workoutTemplate)
                 try? context.save()
             }
         }
         .onChange(of: selectedExercises) {
-            for oldWE in workout.workoutExercises {
+            for oldWE in workoutTemplate.workoutExercises {
                 context.delete(oldWE)
             }
 
-            workout.workoutExercises = selectedExercises
+            workoutTemplate.workoutExercises = selectedExercises
                 .sorted(by: { $0.name < $1.name })
                 .enumerated()
                 .map { index, exercise in
@@ -331,7 +320,7 @@ struct CreateWorkoutView: View {
                         targetNote: nil,
                         targetMode: .simple,
                         order: index,
-                        workout: workout,
+                        workoutTemplate: workoutTemplate,
                         exercise: exercise
                     )
                 }
@@ -340,11 +329,7 @@ struct CreateWorkoutView: View {
 }
 
 #Preview {
-
-    // Seed data so the UI renders immediately
-    let workout = Workout(title: "Example", category: .resistance)
-
-
+    let workoutTemplate = WorkoutTemplate(title: "Example", category: .resistance)
     
     let bench = Exercise(name: "Bench Press", category: .resistance, subCategory: .chest)
     let squat = Exercise(name: "Back Squat", category: .resistance, subCategory: .legs)
@@ -354,7 +339,7 @@ struct CreateWorkoutView: View {
         targetNote: "3×10 @ 135 lbs",
         targetMode: .simple,
         order: 0,
-        workout: workout,
+        workoutTemplate: workoutTemplate,
         exercise: bench
     )
 
@@ -363,63 +348,14 @@ struct CreateWorkoutView: View {
         targetNote: nil,
         targetMode: .advanced,
         order: 1,
-        workout: workout,
+        workoutTemplate: workoutTemplate,
         exercise: squat
     )
-    
 
-    
-    
-//    let run = Exercise(name: "Run", category: .cardio)
-//    let bike = Exercise(name: "Bike", category: .cardio)
-//    
-//    let we1 = WorkoutExercise(
-//        notes: "Elbows tucked",
-//        targetNote: "3×10 @ 135 lbs",
-//        targetMode: .simple,
-//        order: 0,
-//        workout: workout,
-//        exercise: run
-//    )
-//
-//    let we2 = WorkoutExercise(
-//        notes: "Elbows tucked",
-//        targetNote: "3×10 @ 135 lbs",
-//        targetMode: .advanced,
-//        order: 1,
-//        workout: workout,
-//        exercise: bike
-//    )
-    
-    
-    
-//    let pushup = Exercise(name: "Pushup", category: .resistance, isBodyweight: true)
-//    let pullup = Exercise(name: "Pullup", category: .resistance, isBodyweight: true)
-//
-//    let we1 = WorkoutExercise(
-//        notes: "Elbows tucked",
-//        targetNote: "3×10 @ 135 lbs",
-//        targetMode: .simple,
-//        order: 0,
-//        workout: workout,
-//        exercise: pushup
-//    )
-//
-//    let we2 = WorkoutExercise(
-//        notes: nil,
-//        targetNote: nil,
-//        targetMode: .advanced,
-//        order: 1,
-//        workout: workout,
-//        exercise: pullup
-//    )
-
-   
-    
-    workout.workoutExercises = [we1, we2]
+    workoutTemplate.workoutExercises = [we1, we2]
 
     return CreateWorkoutView(
-        workout: workout,
+        workoutTemplate: workoutTemplate,
         isNewWorkout: true,
         workoutCategory: .resistance
     )

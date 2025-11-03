@@ -11,7 +11,7 @@ import SwiftData
 struct WorkoutApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            Workout.self,
+            WorkoutTemplate.self,
             Exercise.self,
             WorkoutEvent.self,
             WorkoutExercise.self,

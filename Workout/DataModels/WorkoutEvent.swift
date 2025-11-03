@@ -28,6 +28,12 @@ final class WorkoutEvent: Identifiable {
     // which is essential for reliable persistence and SwiftUI List identification.
     @Attribute(.unique) var id: UUID
     
+    var title: String?
+    
+    var displayTitle: String {
+        title ?? workoutTemplate?.title ?? "Untitled Workout"
+    }
+    
     // The calendar date when this workout occurs.
     var date: Date
     
@@ -38,22 +44,18 @@ final class WorkoutEvent: Identifiable {
     // Optional text field allowing users to add personal notes about this workout session.
     var notes: String?
     
-    // Defines the relationship between a WorkoutEvent and its corresponding Workout.
-    // This creates a many-to-one relationship:
-    //   - Many WorkoutEvents can reference the same Workout (e.g., “Push Day” on multiple dates).
-    //   - Each WorkoutEvent belongs to one Workout template.
-    //
-    // This connection allows the app to:
-    //   - Display workout details directly from the event
-    //   - Reuse saved workouts without recreating their exercise lists
-    //   - Fetch all scheduled dates for a given Workout
-    @Relationship var workout: Workout
+    
+    // Optional link to a reusable workout template (can be nil for one-off sessions)
+    @Relationship var workoutTemplate: WorkoutTemplate?
     
     // All sets performed in this event
     // Cascade deletion ensures that when an event is deleted,
     // all logged sets for that event are removed automatically.
     @Relationship(deleteRule: .cascade, inverse: \WorkoutSet.workoutEvent)
     var sets: [WorkoutSet] = []
+    
+    @Relationship(deleteRule: .cascade, inverse: \WorkoutExercise.workoutEvent)
+    var workoutExercises: [WorkoutExercise] = []
     
     // MARK: - Initializer
     
@@ -68,13 +70,15 @@ final class WorkoutEvent: Identifiable {
     init(
         id: UUID = UUID(),
         date: Date,
-        workout: Workout,
+        title: String? = nil,
+        workoutTemplate: WorkoutTemplate? = nil,
         startTime: Date? = nil,
         notes: String? = nil
     ) {
         self.id = id
         self.date = date
-        self.workout = workout
+        self.title = title
+        self.workoutTemplate = workoutTemplate
         self.startTime = startTime
         self.notes = notes
     }

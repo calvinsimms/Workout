@@ -12,7 +12,7 @@ struct WorkoutView: View {
     // MARK: - Bindings & State
     
     /// The workout being displayed and editable via child views.
-    @Bindable var workout: Workout
+    @Bindable var workoutTemplate: WorkoutTemplate
     
     /// Tracks whether the workout is in editing mode.
     @State private var isEditing = false
@@ -27,13 +27,13 @@ struct WorkoutView: View {
             Divider()
             
             // MARK: - Exercise List
-            if workout.workoutExercises.isEmpty {
+            if workoutTemplate.workoutExercises.isEmpty {
                 Text("No exercises added yet")
                     .foregroundColor(.secondary)
                     .padding(.horizontal)
             } else {
                 List {
-                    ForEach(workout.workoutExercises.sorted(by: { $0.order < $1.order }), id: \.id) { workoutExercise in
+                    ForEach(workoutTemplate.workoutExercises.sorted(by: { $0.order < $1.order }), id: \.id) { workoutExercise in
                         DisclosureGroup {
                             VStack(alignment: .leading, spacing: 5) {
                                 if let target = workoutExercise.targetNote, !target.isEmpty {
@@ -69,7 +69,7 @@ struct WorkoutView: View {
         .edgesIgnoringSafeArea(.bottom)
         .foregroundColor(.black)
         .background(Color("Background"))
-        .navigationTitle(workout.title)
+        .navigationTitle(workoutTemplate.title)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button("Edit") {
@@ -80,7 +80,7 @@ struct WorkoutView: View {
         // Navigate to workout editing view
         .navigationDestination(isPresented: $isEditing) {
             CreateWorkoutView(
-                workout: workout,        
+                workoutTemplate: workoutTemplate,
                 isNewWorkout: false
             )
         }
@@ -90,6 +90,6 @@ struct WorkoutView: View {
 // MARK: - Preview
 #Preview {
     WorkoutView(
-        workout: Workout(title: "Leg Day")
+        workoutTemplate: WorkoutTemplate(title: "Leg Day")
     )
 }
