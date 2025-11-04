@@ -84,6 +84,8 @@ struct WorkoutView: View {
                 isNewWorkout: false
             )
         }
+        .toolbar(.hidden, for: .tabBar) // 👈 hides the tab bar only on this screen
+
     }
 }
 

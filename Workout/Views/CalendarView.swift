@@ -320,22 +320,29 @@ struct CustomCalendarGrid: View {
                 .buttonStyle(.glass)
                 
                 Spacer()
+                
+                GlassEffectContainer(spacing: 30.0) {
+                    HStack {
+                        Button {
+                            viewModel.moveMonth(by: -1)
+                        } label: {
+                            Image(systemName: "chevron.left")
+                                .font(.subheadline.weight(.semibold))
+                        }
+                        .buttonStyle(.glass)
+                        
+                        Button {
+                            viewModel.moveMonth(by: 1)
+                        } label: {
+                            Image(systemName: "chevron.right")
+                                .font(.subheadline.weight(.semibold))   
+                        }
+                        .buttonStyle(.glass)
 
-                Button {
-                    viewModel.moveMonth(by: -1)
-                } label: {
-                    Image(systemName: "chevron.left")
-                        .font(.subheadline.weight(.semibold))
+                        
+                    }
                 }
-                .buttonStyle(.glass)
 
-                Button {
-                    viewModel.moveMonth(by: 1)
-                } label: {
-                    Image(systemName: "chevron.right")
-                        .font(.subheadline.weight(.semibold))
-                }
-                .buttonStyle(.glass)
             }
             .padding(.horizontal, 18)
             .padding(.bottom, 10)
@@ -374,51 +381,42 @@ struct CalendarView: View {
                     let dayEvents = viewModel.events(on: selectedDate)
 
                     Section {
-                        ForEach(dayEvents) { event in
-                            HStack {
-                                Text(event.displayTitle)
-                                    .font(.system(.title3, weight: .semibold))
-                                Spacer()
-                                if let time = event.startTime {
-                                    Text(time.formatted(date: .omitted, time: .shortened))
-                                        .foregroundColor(.gray)
+                        if dayEvents.isEmpty {
+                            Text("No workouts planned today")
+                                .foregroundColor(.gray)
+                                .italic()
+//                                .padding(.vertical, 5)
+                                .listRowBackground(Color("Background"))
+                        } else {
+                            ForEach(dayEvents) { event in
+                                NavigationLink {
+                                    WorkoutView(workoutTemplate: event.workoutTemplate ?? WorkoutTemplate(title: event.displayTitle))
+                                } label: {
+                                    Text(event.displayTitle)
+                                        .font(.title3.bold())
+                                        .foregroundColor(.black)
+//                                        .padding(.vertical, 5)
                                 }
+                                .listRowBackground(Color("Background"))
                             }
-                            .padding(.vertical, 5)
-                            .listRowBackground(Color("Background"))
-                        }
-                        .onDelete { indexSet in
-                            let allEvents = dayEvents
-                            let globalOffsets = IndexSet(indexSet.compactMap { idx in
-                                viewModel.events.firstIndex { $0.id == allEvents[idx].id }
-                            })
-                            viewModel.deleteEvent(at: globalOffsets)
-                        }
-                        .onMove { source, destination in
-                            viewModel.moveEvent(from: source, to: destination)
-                        }
-                    }
-
-                    Section {
-                        Button {
-                            isAddWorkoutPresented = true
-                        } label: {
-                            HStack {
-                                Image(systemName: "plus.circle.fill")
-                                Text("Add Workout")
-                                    .font(.title3)
-                                    .fontWeight(.semibold)
-                                    .foregroundColor(.black)
-                                    .padding(.vertical, 5)
+                            .onDelete { indexSet in
+                                let allEvents = dayEvents
+                                let globalOffsets = IndexSet(indexSet.compactMap { idx in
+                                    viewModel.events.firstIndex { $0.id == allEvents[idx].id }
+                                })
+                                viewModel.deleteEvent(at: globalOffsets)
+                            }
+                            .onMove { source, destination in
+                                viewModel.moveEvent(from: source, to: destination)
                             }
                         }
-                        .listRowBackground(Color("Background"))
                     }
                 }
                 .listStyle(.plain)
                 .safeAreaInset(edge: .bottom) {
                     Color.clear.frame(height: 100)
                 }
+          
             }
             .background(Color("Background"))
             .colorScheme(.light)

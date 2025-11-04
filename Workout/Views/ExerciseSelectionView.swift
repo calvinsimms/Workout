@@ -57,53 +57,6 @@ struct ExerciseSelectionView: View {
     var body: some View {
         VStack(spacing: 0) {
             
-            // Header Bar
-            HStack {
-                
-                // Check button: Dismiss and confirm selection
-                Button(action: {
-                    dismiss()
-                }) {
-                    Image(systemName: "pencil")
-                        .font(.title2)
-                        .foregroundColor(.black)
-                        .padding(12)
-                }
-                .glassEffect(.regular.interactive())
-
-                
-                Spacer()
-                
-                // Title centered in the header
-                Text("Select Exercises")
-                    .font(.title)
-                    .fontWeight(.bold)
-                    .foregroundColor(.black)
-                    .padding(.bottom, 10)
-                    .padding(.top, 10)
-                
-                Spacer()
-                
-                // Plus button: Opens sheet to create new exercise
-                Button(action: {
-                    newExercise = Exercise(name: "", category: workoutCategory)
-                    showingCreateExercise = true      // Show create sheet
-                }) {
-                    Image(systemName: "plus")
-                        .font(.title2)
-                        .foregroundColor(.black)
-                        .padding(12)
-                        .clipShape(Circle())
-                }
-                .glassEffect(.regular.interactive())
-
-            }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 10)
-
-            
-            Divider()
-            
             // Exercise List
             // Filtered & grouped exercise list
             /// This makes it so you only see exercises that belong to the parent category
@@ -134,8 +87,8 @@ struct ExerciseSelectionView: View {
                             }
                         } label: {
                             Text(sub.rawValue)
-                                .font(.title2)
-                                .padding(.vertical, 5)
+//                                .font(.title2)
+//                                .padding(.vertical, 5)
                                 .fontWeight(.bold)
                                 .foregroundColor(.black)
                         }
@@ -159,42 +112,38 @@ struct ExerciseSelectionView: View {
             .safeAreaInset(edge: .bottom) {
                 Color.clear.frame(height: 70)
             }
+
             
-            .safeAreaInset(edge: .bottom) {
-                VStack {
-                    Button(action: {
-                        selectedExercises = Set(selectedExercises)
-                        dismiss()
-                    }) {
-                        Text("Confirm & Go Back")
-                            .font(.title2)
-                            .fontWeight(.bold)
-                            .foregroundColor(.black)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 10)
-                    }
-                    .buttonStyle(.glass)
-                    .padding(.horizontal, 30)
-                    .offset(y: showConfirmButton ? 0 : 100)
-                    .opacity(showConfirmButton ? 1 : 0)
-                    .animation(.spring(response: 0.5, dampingFraction: 0.8), value: showConfirmButton)
+        }
+        .background(Color("Background"))
+        .navigationTitle("Select Exercises")
+        .toolbar {
+                      
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(action: {
+                    newExercise = Exercise(name: "", category: workoutCategory)
+                    showingCreateExercise = true
+                }) {
+                    Image(systemName: "plus")
+                        .font(.headline)
+                        .foregroundColor(.black)
                 }
-                .onAppear {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                        showConfirmButton = true
-                    }
-                }
-                .background(Color(.clear).ignoresSafeArea())
             }
             
+            ToolbarItem(placement: .bottomBar) {
+                Button(action: {
+                    selectedExercises = Set(selectedExercises)
+                    dismiss()
+                }) {
+                    Text("Done")
+                        .font(.headline)
+                        .fontWeight(.bold)
+                        .foregroundColor(.black)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                }
+            }
         }
-        .toolbar(.hidden, for: .tabBar)
-        // Background & Navigation Customization
-        .background(Color("Background"))
-        .toolbar {
-            // (Optional toolbar content can go here later)
-        }
-        .navigationBarBackButtonHidden(true) // Hide default back button
         
         // Sheet for Creating a New Exercise
         .sheet(isPresented: $showingCreateExercise) {

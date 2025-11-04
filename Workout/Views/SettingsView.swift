@@ -36,28 +36,16 @@ struct SettingsView: View {
                             
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.vertical, 5)
                 .buttonStyle(PlainButtonStyle())
                 .listRowBackground(Color("Background"))
             }
-            .font(.system(.title3, weight: .semibold))
+            .bold()
             .foregroundColor(.black)
             .tint(.black)
             .listStyle(.plain)
             .background(Color("Background"))
             .navigationTitle("Settings ")
-//            .toolbar {
-//                ToolbarItem(placement: .principal) {
-//                    Text("Settings")
-//                        .font(.title)
-//                        .fontWeight(.bold)
-//                        .foregroundColor(.black)
-//                }
-//            }
-//            .navigationBarTitleDisplayMode(.inline)
-
         }
-
     }
 }
 

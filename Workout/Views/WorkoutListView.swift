@@ -55,8 +55,8 @@ struct WorkoutListView: View {
                         Text("No workouts planned today")
                             .foregroundColor(.gray)
                             .italic()
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 5)
+//                            .padding(.horizontal, 20)
+//                            .padding(.vertical, 5)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .listRowBackground(Color("Background"))
                     } else {
@@ -64,18 +64,11 @@ struct WorkoutListView: View {
                             NavigationLink {
                                 WorkoutView(workoutTemplate: event.workoutTemplate ?? WorkoutTemplate(title: event.displayTitle))
                             } label: {
-                                HStack {
-                                    Text(event.displayTitle)
-                                        .font(.title3.bold())
-                                        .foregroundColor(.black)
-                                    Spacer()
-                                    if let time = event.startTime {
-                                        Text(time.formatted(date: .omitted, time: .shortened))
-                                            .foregroundColor(.gray)
-                                    }
-                                }
-                                .padding(.horizontal, 20)
-                                .padding(.vertical, 5)
+                                Text(event.displayTitle)
+                                    .font(.title3.bold())
+                                    .foregroundColor(.black)
+//                                    .padding(.horizontal, 20)
+//                                    .padding(.vertical, 5)
                             }
                             .listRowBackground(Color("Background"))
                         }
@@ -115,15 +108,14 @@ struct WorkoutListView: View {
                                         Text(workout.title)
                                             .font(.title3.bold())
                                             .foregroundColor(.black)
-                                            .padding(.horizontal, 20)
+//                                            .padding(.horizontal, 20)
                                         Spacer()
                                     }
                                     .frame(maxWidth: .infinity, alignment: .leading)
-                                    .padding(.vertical, 10)
+//                                    .padding(.vertical, 10)
                                 }
                                 .buttonStyle(PlainButtonStyle())
                                 .listRowBackground(Color("Background"))
-                                .listRowInsets(EdgeInsets(top: 10, leading: 0, bottom: 10, trailing: 15))
                                 .tint(.black)
                             }
                             .onDelete { offsets in
@@ -136,11 +128,11 @@ struct WorkoutListView: View {
                             Text(category.rawValue)
                                 .font(.title3.bold())
                                 .foregroundColor(.black)
-                                .padding(.vertical, 5)
+//                                .padding(.vertical, 5)
                         }
                         .listRowBackground(Color("Background"))
                         .tint(.black)
-                        .padding(.leading, 20)
+//                        .padding(.leading, 20)
                     }
                 }
             }

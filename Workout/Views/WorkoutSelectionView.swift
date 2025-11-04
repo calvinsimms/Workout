@@ -12,6 +12,8 @@ struct WorkoutSelectionView: View {
     
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
+    @Environment(\.editMode) private var editMode
+
     @Query(sort: [SortDescriptor(\WorkoutTemplate.title)]) private var workoutTemplates: [WorkoutTemplate]
     
     @State private var selectedWorkout: WorkoutTemplate?
@@ -20,112 +22,122 @@ struct WorkoutSelectionView: View {
     @State private var showingExerciseSheet = false
     @State private var selectedExercises: Set<Exercise> = []
     @State private var selectedCategory: WorkoutCategory = .resistance
+    
+
 
         
     @State private var selectedType = "NEW"
     let newOrSaved = ["NEW", "SAVED"]
     
-    init(defaultDate: Date) {
-           _date = State(initialValue: defaultDate)
-       }
-    
+    init(defaultDate: Date, sampleExercises: [Exercise]? = nil) {
+         _date = State(initialValue: defaultDate)
+         if let sampleExercises {
+             _selectedExercises = State(initialValue: Set(sampleExercises))
+         }
+     }
 
     var body: some View {
         
         NavigationStack {
-            VStack(spacing: 10) {
-                
-                DatePicker("Date", selection: $date, displayedComponents: .date)
-                
+            List {
+
                 Picker("Select new or saved workout", selection: $selectedType) {
                     ForEach(newOrSaved, id: \.self) { type in
                         Text(type)
                     }
                 }
                 .pickerStyle(.segmented)
-                
+                .listRowBackground(Color("Background"))
                 
                 if selectedType == "SAVED" {
-                    Section("SELECT WORKOUT") {
+                    
+                    DatePicker("Date", selection: $date, displayedComponents: .date)
+                        .font(.headline)
+                    
+                    Section("Select Workout") {
                         Picker("Select Workout", selection: $selectedWorkout) {
                             ForEach(workoutTemplates) { workoutTemplate in
                                 Text(workoutTemplate.title).tag(Optional(workoutTemplate))
                             }
                         }
+                        .pickerStyle(.menu)
                     }
                     .font(.headline)
-                    
+
                 } else {
                     
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("WORKOUT NAME")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                    DatePicker("Date", selection: $date, displayedComponents: .date)
+                        .font(.headline)
+                        .listRowBackground(Color("Background"))
                         
-                        TextField("Title", text: $eventTitle)
+                        TextField("Workout Title", text: $eventTitle)
                             .textFieldStyle(.plain)
-                        
-                        Text("CATERGORY")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        
-                        Picker("Category", selection: $selectedCategory) {
-                            ForEach(WorkoutCategory.allCases) { category in
-                                Text(category.rawValue).tag(category)
-                            }
+                            .listRowBackground(Color("Background"))
+
+                    Picker("Category", selection: $selectedCategory) {
+                        ForEach(WorkoutCategory.allCases) { category in
+                            Text(category.rawValue).tag(category)
                         }
-                        .pickerStyle(.segmented)
-                        .disabled(!selectedExercises.isEmpty)
-                        
-                        if !selectedExercises.isEmpty {
-                            Text("Category locked - remove all exercises to change")
-                                .font(.footnote)
-                                .foregroundColor(.gray)
-                                .frame(maxWidth: .infinity, alignment: .center)
-                        }
-                        
-                        
-                        HStack {
-                            Text("EXERCISES")
-                                .font(.headline)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            
-                            Button {
-                                showingExerciseSheet = true
-                            } label: {
-                                Label("Add", systemImage: "plus.circle.fill")
-                                    .labelStyle(.titleAndIcon)
-                            }
-                            .buttonStyle(.glass)
-                        }
-                        
-                        if selectedExercises.isEmpty {
-                            Text("No exercises selected")
-                                .foregroundColor(.gray)
-                                .italic()
-                        } else {
-                            ForEach(Array(selectedExercises).sorted(by: { $0.name < $1.name }), id: \.id) { exercise in
-                                Text("• \(exercise.name)")
-                                    .font(.body)
-                            }
-                        }
-                        
-                        
                     }
+                    .pickerStyle(.segmented)
+                    .disabled(!selectedExercises.isEmpty)
+                    .listRowBackground(Color("Background"))
+//                 
+//                    if !selectedExercises.isEmpty {
+//                        Text("Category locked - remove all exercises to change")
+//                            .font(.footnote)
+//                            .foregroundColor(.gray)
+//                            .frame(maxWidth: .infinity, alignment: .center)
+//                            .listRowBackground(Color("Background"))
+//
+//                    }
                     
+//                    HStack {
+//                       Button {
+//                           showingExerciseSheet = true
+//                       } label: {
+//                           Text("Add")
+//                               .bold()
+//                               .foregroundColor(.black)
+//                       }
+//                       .buttonStyle(.glass)
+//
+//                       Spacer()
+//                    
+//                   }
+//                   .listRowBackground(Color("Background"))
+                    
+                                            
+                    if selectedExercises.isEmpty {
+                        Text("No exercises added")
+                            .foregroundColor(.gray)
+                            .italic()
+                            .listRowBackground(Color("Background"))
+
+                    } else {
+                        Section {
+                            ForEach(Array(selectedExercises).sorted(by: { $0.name < $1.name }), id: \.id) { exercise in
+                                DisclosureGroup(exercise.name) {
+                                    Text("Targets will be here")
+                                        .padding(.vertical, 4)
+                                }
+                                .bold()
+                                .listRowBackground(Color("Background"))
+                            }
+                            .onDelete(perform: deleteExercise)
+                        }
+                    }
                 }
-                
-                Spacer()
-                
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 10)
+            .listStyle(.plain)
             .background(Color("Background"))
             .tint(.black)
             .toolbar {
+                
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
                 }
+                
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
                         saveWorkoutEvent()
@@ -133,12 +145,34 @@ struct WorkoutSelectionView: View {
                     }
                     .disabled(selectedType == "SAVED" && selectedWorkout == nil)
                 }
+                
+                ToolbarItem(placement: .bottomBar) {
+                    Button {
+                        showingExerciseSheet = true
+                    } label: {
+                        Image(systemName: "plus")
+                            .font(.headline)
+                            .foregroundColor(.black)
+                    }
+                }
+                
+                ToolbarItem(placement: .bottomBar) {
+                    if !selectedExercises.isEmpty {
+                        EditButton()
+                            .font(.headline)
+                            .bold()
+                            .foregroundStyle(.black)
+                            .tint(.black)
+                    }
+                }
             }
             .sheet(isPresented: $showingExerciseSheet) {
-                ExerciseSelectionView(
-                    selectedExercises: $selectedExercises,
-                    workoutCategory: .resistance // or another default, if you want
-                )
+                NavigationStack {
+                    ExerciseSelectionView(
+                        selectedExercises: $selectedExercises,
+                        workoutCategory: selectedCategory
+                    )
+                }
             }
         }
 
@@ -209,10 +243,24 @@ struct WorkoutSelectionView: View {
             print("⚠️ Failed to save new workout event: \(error.localizedDescription)")
         }
     }
+    
+    private func deleteExercise(at offsets: IndexSet) {
+        let sortedExercises = Array(selectedExercises).sorted(by: { $0.name < $1.name })
+        for index in offsets {
+            let exerciseToRemove = sortedExercises[index]
+            selectedExercises.remove(exerciseToRemove)
+        }
+    }
 
 }
 
 #Preview {
-    WorkoutSelectionView(defaultDate: Date())
+    WorkoutSelectionView(
+        defaultDate: Date(),
+        sampleExercises: [
+            Exercise(name: "Bench Press"),
+            Exercise(name: "Squat"),
+            Exercise(name: "Deadlift")
+        ]
+    )
 }
-

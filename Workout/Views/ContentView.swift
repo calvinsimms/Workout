@@ -146,8 +146,8 @@ struct ContentView: View {
                 Exercise(name: "Overhead Tricep Extension", subCategory: .triceps, isBodyweight: false),
                 
                 // Abs
-                Exercise(name: "Crunches", subCategory: .abs, isBodyweight: true), // ✅ bodyweight
-                Exercise(name: "Plank", subCategory: .abs, isBodyweight: true),     // ✅ bodyweight
+                Exercise(name: "Crunches", subCategory: .abs, isBodyweight: true),
+                Exercise(name: "Plank", subCategory: .abs, isBodyweight: true),
                 
                 // Cardio
                 Exercise(name: "Running", category: .cardio),
@@ -160,7 +160,6 @@ struct ContentView: View {
                 modelContext.insert(exercise)
             }
             
-            // Save to persist data in SwiftData and mark seeding as complete
             try modelContext.save()
             didSeedExercises = true
             
