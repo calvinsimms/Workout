@@ -56,7 +56,7 @@ struct WorkoutListView: View {
                             .foregroundColor(.gray)
                             .italic()
 //                            .padding(.horizontal, 20)
-//                            .padding(.vertical, 5)
+                            .padding(.vertical, 5)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .listRowBackground(Color("Background"))
                     } else {
@@ -68,7 +68,7 @@ struct WorkoutListView: View {
                                     .font(.title3.bold())
                                     .foregroundColor(.black)
 //                                    .padding(.horizontal, 20)
-//                                    .padding(.vertical, 5)
+                                    .padding(.vertical, 5)
                             }
                             .listRowBackground(Color("Background"))
                         }
@@ -111,8 +111,8 @@ struct WorkoutListView: View {
 //                                            .padding(.horizontal, 20)
                                         Spacer()
                                     }
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-//                                    .padding(.vertical, 10)
+//                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.vertical, 5)
                                 }
                                 .buttonStyle(PlainButtonStyle())
                                 .listRowBackground(Color("Background"))
@@ -128,7 +128,7 @@ struct WorkoutListView: View {
                             Text(category.rawValue)
                                 .font(.title3.bold())
                                 .foregroundColor(.black)
-//                                .padding(.vertical, 5)
+                                .padding(.vertical, 5)
                         }
                         .listRowBackground(Color("Background"))
                         .tint(.black)

@@ -26,8 +26,8 @@ struct WorkoutSelectionView: View {
 
 
         
-    @State private var selectedType = "NEW"
-    let newOrSaved = ["NEW", "SAVED"]
+    @State private var selectedType = "New"
+    let newOrSaved = ["New", "Saved"]
     
     init(defaultDate: Date, sampleExercises: [Exercise]? = nil) {
          _date = State(initialValue: defaultDate)
@@ -49,7 +49,7 @@ struct WorkoutSelectionView: View {
                 .pickerStyle(.segmented)
                 .listRowBackground(Color("Background"))
                 
-                if selectedType == "SAVED" {
+                if selectedType == "Saved" {
                     
                     DatePicker("Date", selection: $date, displayedComponents: .date)
                         .font(.headline)

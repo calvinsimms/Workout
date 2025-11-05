@@ -385,7 +385,7 @@ struct CalendarView: View {
                             Text("No workouts planned today")
                                 .foregroundColor(.gray)
                                 .italic()
-//                                .padding(.vertical, 5)
+                                .padding(.vertical, 5)
                                 .listRowBackground(Color("Background"))
                         } else {
                             ForEach(dayEvents) { event in
@@ -395,7 +395,7 @@ struct CalendarView: View {
                                     Text(event.displayTitle)
                                         .font(.title3.bold())
                                         .foregroundColor(.black)
-//                                        .padding(.vertical, 5)
+                                        .padding(.vertical, 5)
                                 }
                                 .listRowBackground(Color("Background"))
                             }
