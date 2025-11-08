@@ -389,7 +389,11 @@ struct CalendarView: View {
                         } else {
                             ForEach(dayEvents) { event in
                                 NavigationLink {
-                                    WorkoutView(workoutTemplate: event.workoutTemplate ?? WorkoutTemplate(title: event.displayTitle))
+                                    if let template = event.workoutTemplate {
+                                        WorkoutView(workoutTemplate: template)
+                                    } else {
+                                        WorkoutView(workoutEvent: event)
+                                    }
                                 } label: {
                                     Text(event.displayTitle)
                                         .font(.title3.bold())

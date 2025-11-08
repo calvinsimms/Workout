@@ -146,7 +146,9 @@ struct WorkoutSelectionView: View {
                     .disabled(selectedType == "SAVED" && selectedWorkout == nil)
                 }
                 
-                ToolbarItem(placement: .bottomBar) {
+                ToolbarItemGroup(placement: .bottomBar) {
+                
+                
                     Button {
                         showingExerciseSheet = true
                     } label: {
@@ -154,9 +156,7 @@ struct WorkoutSelectionView: View {
                             .font(.headline)
                             .foregroundColor(.black)
                     }
-                }
                 
-                ToolbarItem(placement: .bottomBar) {
                     if !selectedExercises.isEmpty {
                         EditButton()
                             .font(.headline)
@@ -213,15 +213,12 @@ struct WorkoutSelectionView: View {
             
             return
         }
-        
-        // MARK: - NEW EVENT PATH
-        // The user is creating a new workout from scratch with a title + exercises
+    
         let newEvent = WorkoutEvent(
             date: date,
             title: eventTitle.isEmpty ? nil : eventTitle
         )
         
-        // Attach selected exercises to the event
         for (index, exercise) in selectedExercises.sorted(by: { $0.name < $1.name }).enumerated() {
             let workoutExercise = WorkoutExercise(
                 notes: nil,
