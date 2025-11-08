@@ -308,7 +308,6 @@ struct CustomCalendarGrid: View {
             .padding(.horizontal, 10)
             .padding(.bottom, 6)
 
-            // Footer controls
             HStack {
 
                 Button("Today") {

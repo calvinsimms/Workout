@@ -8,7 +8,6 @@
 import SwiftUI
 import SwiftData
 
-// MARK: - Tab Enum
 enum Tab: String {
     case workouts = "Workouts"
     case calendar = "Calendar"
@@ -17,15 +16,6 @@ enum Tab: String {
     case settings = "Settings"
 }
 
-// MARK: - ContentView
-// The main view of the app that controls tab navigation between different sections:
-// - Workouts
-// - Calendar
-// - Statistics
-// - Coaching
-// - Settings
-//
-// It also initializes the data environment and seeds default exercises on first launch.
 struct ContentView: View {
     
     // MARK: - Environment and Data Queries

@@ -8,17 +8,14 @@
 import SwiftUI
 import SwiftData
 
-// Displays a list of workouts, categorized by type, and allows adding, deleting, and reordering workouts.
 struct WorkoutListView: View {
-    // MARK: - Environment and State
     @Environment(\.modelContext) private var context
     @Environment(\.editMode) private var editMode
 
     @State private var isCreatingNewWorkout = false
     @State private var newWorkout = WorkoutTemplate(title: "", order: 0)
     @State private var expandedCategories: Set<WorkoutCategory> = []
-    
-    // MARK: - Input Data and Actions
+
     @Query(sort: \WorkoutTemplate.order, order: .forward) private var workoutTemplates: [WorkoutTemplate]
     
     private var workoutsByCategory: [WorkoutCategory: [WorkoutTemplate]] {
@@ -40,12 +37,10 @@ struct WorkoutListView: View {
         )
     }
 
-    // MARK: - Body
     var body: some View {
         VStack(spacing: 0) {
-            // MARK: - Workout List
+            
             List {
-                // Section for today's planned workouts
                 Section(header: Text("Today's Workouts")
                     .font(.title2)
                     .fontWeight(.bold)
@@ -55,7 +50,6 @@ struct WorkoutListView: View {
                         Text("No workouts planned today")
                             .foregroundColor(.gray)
                             .italic()
-//                            .padding(.horizontal, 20)
                             .padding(.vertical, 5)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .listRowBackground(Color("Background"))
@@ -67,7 +61,6 @@ struct WorkoutListView: View {
                                 Text(event.displayTitle)
                                     .font(.title3.bold())
                                     .foregroundColor(.black)
-//                                    .padding(.horizontal, 20)
                                     .padding(.vertical, 5)
                             }
                             .listRowBackground(Color("Background"))
@@ -75,13 +68,11 @@ struct WorkoutListView: View {
                     }
                 }
                 
-                // Section for saved workouts (currently empty, can be expanded)
                 Section(header: Text("Saved Workouts")
                     .font(.title2)
                     .fontWeight(.bold)
                     .foregroundColor(.black)
                 ) {
-                    // Sections for each workout category
                     ForEach(WorkoutCategory.allCases) { category in
                         DisclosureGroup(
                             isExpanded: Binding(
@@ -99,7 +90,6 @@ struct WorkoutListView: View {
                         ) {
                             let categoryWorkouts = workoutsByCategory[category] ?? []
 
-                            // Show the list of workouts for this category
                             ForEach(categoryWorkouts) { workout in
                                 NavigationLink {
                                     WorkoutView(workoutTemplate: workout)
@@ -108,10 +98,8 @@ struct WorkoutListView: View {
                                         Text(workout.title)
                                             .font(.title3.bold())
                                             .foregroundColor(.black)
-//                                            .padding(.horizontal, 20)
                                         Spacer()
                                     }
-//                                    .frame(maxWidth: .infinity, alignment: .leading)
                                     .padding(.vertical, 5)
                                 }
                                 .buttonStyle(PlainButtonStyle())
@@ -132,7 +120,6 @@ struct WorkoutListView: View {
                         }
                         .listRowBackground(Color("Background"))
                         .tint(.black)
-//                        .padding(.leading, 20)
                     }
                 }
             }
@@ -175,7 +162,6 @@ struct WorkoutListView: View {
         }
     }
     
-    // MARK: - Data Management Methods
     private func addWorkout(_ workoutTemplate: WorkoutTemplate) {
         let nextOrder = (workoutTemplates.max(by: { $0.order < $1.order })?.order ?? -1) + 1
         workoutTemplate.order = nextOrder
@@ -199,7 +185,6 @@ struct WorkoutListView: View {
         }
     }
     
-    // MARK: - Helper Functions
     private func deleteWorkoutsForCategory(_ offsets: IndexSet, category: WorkoutCategory) {
         guard let categoryWorkouts = workoutsByCategory[category] else { return }
         let toDelete = offsets.map { categoryWorkouts[$0] }
@@ -213,11 +198,9 @@ struct WorkoutListView: View {
     }
 
     private func moveWorkoutsForCategory(_ source: IndexSet, _ destination: Int, category: WorkoutCategory) {
-        // Filter out workouts of the given category
         guard var categoryWorkouts = workoutsByCategory[category] else { return }
         categoryWorkouts.move(fromOffsets: source, toOffset: destination)
 
-        // Apply new order within that category only
         for (index, workout) in categoryWorkouts.enumerated() {
             workout.order = index
         }
@@ -225,7 +208,6 @@ struct WorkoutListView: View {
     }
 }
 
-// MARK: - Preview
 #Preview {
     WorkoutListView()
 }
