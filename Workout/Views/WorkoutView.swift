@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 import Combine
 
 @MainActor
@@ -53,6 +54,116 @@ final class TimerManager: ObservableObject {
     }
 }
 
+struct SetsInputSection: View {
+    @State private var sets: [UUID] = []
+    @State private var weight: String = ""
+    @State private var reps: String = ""
+    @State private var rpe: String = ""
+    @State private var duration: String = ""
+    @State private var distance: String = ""
+    @State private var resistance: String = ""
+    @State private var heartRate: String = ""
+    @State private var isEditing = false
+
+    let workoutExercise: WorkoutExercise
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // MARK: - Header
+            HStack {
+                Text("Sets")
+                    .font(.headline)
+                Spacer()
+                EditButton()
+                    .buttonStyle(.glass)
+                    .opacity(sets.isEmpty ? 0 : 1)
+                Button {
+                    addSet()
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.title3)
+                }
+                .buttonStyle(.glass)
+            }
+            
+            Divider()
+                .padding(.top, 10)
+
+            
+            List {
+                ForEach(Array(sets.enumerated()), id: \.element) { index, _ in
+                    HStack {
+                        Text("\(index + 1)")
+                            .frame(width: 20, alignment: .leading)
+
+                        switch workoutExercise.exercise.setType {
+                        case .resistance:
+                            TextField("Weight", text: $weight)
+                                .keyboardType(.decimalPad)
+                                .textFieldStyle(.plain)
+
+                            TextField("Reps", text: $reps)
+                                .keyboardType(.numberPad)
+                                .textFieldStyle(.plain)
+
+                            TextField("RPE", text: $rpe)
+                                .keyboardType(.decimalPad)
+                                .textFieldStyle(.plain)
+
+                        case .bodyweight:
+                            TextField("Reps", text: $reps)
+                                .keyboardType(.numberPad)
+                                .textFieldStyle(.plain)
+
+                            TextField("RPE", text: $rpe)
+                                .keyboardType(.decimalPad)
+                                .textFieldStyle(.plain)
+
+                        case .cardio:
+                            TextField("Duration", text: $duration)
+                                .keyboardType(.decimalPad)
+                                .textFieldStyle(.plain)
+
+                            TextField("Distance", text: $distance)
+                                .keyboardType(.decimalPad)
+                                .textFieldStyle(.plain)
+
+                            TextField("Heart Rate", text: $heartRate)
+                                .keyboardType(.numberPad)
+                                .textFieldStyle(.plain)
+                        }
+                    }
+                    .listRowBackground(Color("Background"))
+
+                }
+                .onDelete(perform: deleteSet)
+                .onMove(perform: moveSet)
+            }
+            .frame(height: CGFloat(sets.count) * 44 + 20)
+            .listStyle(.plain)
+        }
+    }
+
+    // MARK: - Actions
+    private func addSet() {
+        withAnimation {
+            sets.append(UUID())
+        }
+    }
+
+    private func deleteSet(at offsets: IndexSet) {
+        withAnimation {
+            sets.remove(atOffsets: offsets)
+        }
+    }
+
+    private func moveSet(from source: IndexSet, to destination: Int) {
+        withAnimation {
+            sets.move(fromOffsets: source, toOffset: destination)
+        }
+    }
+}
+
 
 
 
@@ -61,27 +172,50 @@ private func exerciseList(_ exercises: [WorkoutExercise]) -> some View {
     List {
         ForEach(exercises.sorted(by: { $0.order < $1.order }), id: \.id) { workoutExercise in
             DisclosureGroup {
-                VStack(alignment: .leading, spacing: 5) {
-                    if let target = workoutExercise.targetNote, !target.isEmpty {
-                        Text("Target: \(target)")
-                    }
-                    if let notes = workoutExercise.notes, !notes.isEmpty {
-                        Text("Notes: \(notes)")
-                            .foregroundColor(.gray)
-                    }
-                    Text("Sets will go here")
-                        .foregroundColor(.secondary)
-                }
+                VStack(alignment: .leading, spacing: 0) {
+                    
+                    Text("Targets")
+                        .font(.headline)
+                        .padding(.bottom, 10)
+                    
+                    TextField("Targets", text: Binding(
+                        get: { workoutExercise.targetNote ?? "" },
+                        set: { workoutExercise.targetNote = $0 }
+                    ))
+                    .textFieldStyle(.plain)
+                    .font(.subheadline)
+                    
+                    
+                    Divider()
+                        .padding(.vertical, 10)
+
+                    SetsInputSection(workoutExercise: workoutExercise)
+                    
+                    Text("Notes")
+                        .font(.headline)
+                        .padding(.bottom, 10)
+
+                    
+                    TextField("Notes", text: Binding(
+                        get: { workoutExercise.notes ?? "" },
+                        set: { workoutExercise.notes = $0 }
+                    ))
+                    .textFieldStyle(.plain)
+                    .font(.subheadline)
+                                    }
             } label: {
                 Text(workoutExercise.exercise.name)
                     .font(.system(.title3, weight: .semibold))
             }
+            .padding(.vertical, 5)
             .listRowBackground(Color("Background"))
+
         }
     }
     .listStyle(.plain)
     .tint(.black)
 }
+
 
 
 struct WorkoutView: View {
@@ -160,15 +294,13 @@ struct WorkoutView: View {
                         if showingLapTime {
                             Text("Lap \(max(timerManager.lapTimes.count + 1, 1))")
                                 .font(.system(size: UIFont.preferredFont(forTextStyle: .headline).pointSize, weight: .regular))
-                                .foregroundColor(.gray)
                             Text(timerManager.formattedTime(timerManager.lapTime))
-                                .font(.system(.headline, design: .monospaced))
+                                .font(.system(size: UIFont.preferredFont(forTextStyle: .headline).pointSize, weight: .regular, design: .monospaced))
                         } else {
                             Text("Total")
                                 .font(.system(size: UIFont.preferredFont(forTextStyle: .headline).pointSize, weight: .regular))
-                                .foregroundColor(.gray)
                             Text(timerManager.formattedTime(timerManager.elapsedTime))
-                                .font(.system(.headline, design: .monospaced))
+                                .font(.system(size: UIFont.preferredFont(forTextStyle: .headline).pointSize, weight: .regular, design: .monospaced))
                         }
                     }
                     .fixedSize(horizontal: true, vertical: false)
@@ -219,9 +351,13 @@ struct WorkoutView: View {
         }
         .toolbar(.hidden, for: .tabBar)
         .sheet(isPresented: $showingLapHistory) {
-            LapHistorySheet(timerManager: timerManager)
-                .presentationDetents([.medium])
-                .presentationDragIndicator(.visible)
+            NavigationStack {
+                LapHistorySheet(timerManager: timerManager)
+                    .navigationTitle("Lap History")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .presentationDetents([.medium])
+                    .presentationDragIndicator(.visible)
+            }
         }
     }
 }
@@ -230,17 +366,12 @@ struct LapHistorySheet: View {
     @ObservedObject var timerManager: TimerManager
 
     var body: some View {
-        VStack(alignment: .center) {
-            Text("Lap History")
-                .font(.title2.bold())
-                .padding(.top, 10)
-            
+        VStack {
             if timerManager.lapTimes.isEmpty {
                 Text("No laps recorded")
                     .foregroundColor(.gray)
                     .italic()
                     .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.top, 10)
             } else {
                 List {
                     ForEach(Array(timerManager.lapTimes.enumerated()), id: \.offset) { index, time in
@@ -258,10 +389,8 @@ struct LapHistorySheet: View {
                 }
                 .listStyle(.plain)
             }
-            
             Spacer()
         }
-        .padding()
         .background(Color("Background"))
     }
 }
@@ -269,5 +398,62 @@ struct LapHistorySheet: View {
 
 
 #Preview {
-    WorkoutView(workoutTemplate: WorkoutTemplate(title: "Leg Day"))
+    // MARK: - Mock Exercises
+    let squat = Exercise(
+        name: "Barbell Squat",
+        category: .resistance,
+        subCategory: .legs
+    )
+    let deadlift = Exercise(
+        name: "Deadlift",
+        category: .cardio,
+        
+    )
+    let legPress = Exercise(
+        name: "Leg Press",
+        category: .resistance,
+        subCategory: .legs
+    )
+
+    // MARK: - Mock Workout Template
+    let template = WorkoutTemplate(
+        title: "Leg Day"
+    )
+
+    // MARK: - Mock Workout Exercises
+    let squatExercise = WorkoutExercise(
+        notes: "Focus on keeping core tight",
+        targetNote: "3 sets of 8 reps @ 75%",
+        order: 1,
+        workoutTemplate: template,
+        exercise: squat
+    )
+
+    let deadliftExercise = WorkoutExercise(
+//        notes: "Flat back, engage lats before lift",
+//        targetNote: "3 sets of 5 reps @ 80%",
+        order: 2,
+        workoutTemplate: template,
+        exercise: deadlift
+    )
+
+    let legPressExercise = WorkoutExercise(
+//        notes: "Slow negatives, full depth",
+//        targetNote: "4 sets of 12 reps",
+        order: 3,
+        workoutTemplate: template,
+        exercise: legPress
+    )
+
+    // Attach the exercises to the template
+    template.workoutExercises = [squatExercise, deadliftExercise, legPressExercise]
+
+    // MARK: - Return the Preview
+    return WorkoutView(workoutTemplate: template)
+        .modelContainer(for: [
+            Exercise.self,
+            WorkoutTemplate.self,
+            WorkoutExercise.self
+        ])
 }
+
