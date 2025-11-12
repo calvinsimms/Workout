@@ -204,8 +204,24 @@ private func exerciseList(_ exercises: [WorkoutExercise]) -> some View {
                     .font(.subheadline)
                                     }
             } label: {
-                Text(workoutExercise.exercise.name)
-                    .font(.system(.title3, weight: .semibold))
+                HStack {
+                    Button {
+                        // Toggle completion state (visual only for now)
+                        workoutExercise.isCompleted.toggle()
+                    } label: {
+                        Image(systemName: workoutExercise.isCompleted ? "checkmark.circle.fill" : "circle.fill")
+                            .foregroundColor(workoutExercise.isCompleted ? .black : .white)
+                            .glassEffect()
+                            .font(.title3)
+                            .scaleEffect(workoutExercise.isCompleted ? 1.1 : 1.0)
+                            .animation(.spring(response: 0.35, dampingFraction: 0.6), value: workoutExercise.isCompleted)
+                        
+                    }
+                    .buttonStyle(.plain)
+                    
+                    Text(workoutExercise.exercise.name)
+                        .font(.system(.title3, weight: .semibold))
+                }
             }
             .padding(.vertical, 5)
             .listRowBackground(Color("Background"))

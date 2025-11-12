@@ -47,6 +47,8 @@ final class WorkoutExercise: Identifiable, Hashable {
     // MARK: - Ordering
     var order: Int
     
+    var isCompleted: Bool = false
+    
     // MARK: - Relationships
     
     /// The parent workout that this record belongs to.
