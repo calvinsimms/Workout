@@ -51,8 +51,6 @@ final class WorkoutEvent: Identifiable {
     // All sets performed in this event
     // Cascade deletion ensures that when an event is deleted,
     // all logged sets for that event are removed automatically.
-    @Relationship(deleteRule: .cascade, inverse: \WorkoutSet.workoutEvent)
-    var sets: [WorkoutSet] = []
     
     @Relationship(deleteRule: .cascade, inverse: \WorkoutExercise.workoutEvent)
     var workoutExercises: [WorkoutExercise] = []

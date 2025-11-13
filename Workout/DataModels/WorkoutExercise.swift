@@ -66,6 +66,8 @@ final class WorkoutExercise: Identifiable, Hashable {
     /// all associated `TargetSet` records are automatically removed.
     @Relationship(deleteRule: .cascade) var targetSets: [TargetSet] = []
     
+    @Relationship(deleteRule: .cascade) var sets: [WorkoutSet] = []
+    
     // MARK: - Initializer
     // MARK: - Initializers
 

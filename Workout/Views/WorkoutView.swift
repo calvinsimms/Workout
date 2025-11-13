@@ -55,28 +55,20 @@ final class TimerManager: ObservableObject {
 }
 
 struct SetsInputSection: View {
-    @State private var sets: [UUID] = []
-    @State private var weight: String = ""
-    @State private var reps: String = ""
-    @State private var rpe: String = ""
-    @State private var duration: String = ""
-    @State private var distance: String = ""
-    @State private var resistance: String = ""
-    @State private var heartRate: String = ""
+    @Bindable var workoutExercise: WorkoutExercise
     @State private var isEditing = false
 
-    let workoutExercise: WorkoutExercise
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // MARK: - Header
+            
             HStack {
                 Text("Sets")
                     .font(.headline)
                 Spacer()
                 EditButton()
                     .buttonStyle(.glass)
-                    .opacity(sets.isEmpty ? 0 : 1)
+                    .opacity(workoutExercise.sets.isEmpty ? 0 : 1)
                 Button {
                     addSet()
                 } label: {
@@ -91,78 +83,67 @@ struct SetsInputSection: View {
 
             
             List {
-                ForEach(Array(sets.enumerated()), id: \.element) { index, _ in
-                    HStack {
-                        Text("\(index + 1)")
-                            .frame(width: 20, alignment: .leading)
+                  ForEach($workoutExercise.sets) { $set in
+                      HStack {
+                          Text("\((workoutExercise.sets.firstIndex(of: set) ?? 0) + 1)")
+                              .frame(width: 20, alignment: .leading)
 
-                        switch workoutExercise.exercise.setType {
-                        case .resistance:
-                            TextField("Weight", text: $weight)
-                                .keyboardType(.decimalPad)
-                                .textFieldStyle(.plain)
+                          ForEach(set.type.relevantAttributes) { attribute in
+                              attributeField(attribute: attribute, set: $set)
+                          }
+                      }
+                      .listRowBackground(Color("Background"))
+                  }
+                  .onDelete(perform: deleteSet)
+                  .onMove(perform: moveSet)
+              }
+              .frame(height: CGFloat(workoutExercise.sets.count) * 44 + 20)
+              .listStyle(.plain)
+          }
+      }
 
-                            TextField("Reps", text: $reps)
-                                .keyboardType(.numberPad)
-                                .textFieldStyle(.plain)
+      @ViewBuilder
+      private func attributeField(attribute: WorkoutAttribute, set: Binding<WorkoutSet>) -> some View {
+          switch attribute {
+          case .weight:
+              TextField("Weight", value: set.weight, format: .number)
+                  .keyboardType(.decimalPad)
+          case .reps:
+              TextField("Reps", value: set.reps, format: .number)
+                  .keyboardType(.numberPad)
+          case .rpe:
+              TextField("RPE", value: set.rpe, format: .number.precision(.fractionLength(0...1)))
+                  .keyboardType(.decimalPad)
+          case .duration:
+              TextField("Duration", value: set.duration, format: .number)
+                  .keyboardType(.decimalPad)
+          case .distance:
+              TextField("Distance", value: set.distance, format: .number)
+                  .keyboardType(.decimalPad)
+          case .resistance:
+              TextField("Resistance", value: set.resistance, format: .number)
+                  .keyboardType(.decimalPad)
+          case .heartRate:
+              TextField("Heart Rate", value: set.heartRate, format: .number)
+                  .keyboardType(.numberPad)
+          }
+      }
 
-                            TextField("RPE", text: $rpe)
-                                .keyboardType(.decimalPad)
-                                .textFieldStyle(.plain)
-
-                        case .bodyweight:
-                            TextField("Reps", text: $reps)
-                                .keyboardType(.numberPad)
-                                .textFieldStyle(.plain)
-
-                            TextField("RPE", text: $rpe)
-                                .keyboardType(.decimalPad)
-                                .textFieldStyle(.plain)
-
-                        case .cardio:
-                            TextField("Duration", text: $duration)
-                                .keyboardType(.decimalPad)
-                                .textFieldStyle(.plain)
-
-                            TextField("Distance", text: $distance)
-                                .keyboardType(.decimalPad)
-                                .textFieldStyle(.plain)
-
-                            TextField("Heart Rate", text: $heartRate)
-                                .keyboardType(.numberPad)
-                                .textFieldStyle(.plain)
-                        }
-                    }
-                    .listRowBackground(Color("Background"))
-
-                }
-                .onDelete(perform: deleteSet)
-                .onMove(perform: moveSet)
-            }
-            .frame(height: CGFloat(sets.count) * 44 + 20)
-            .listStyle(.plain)
-        }
-    }
-
-    // MARK: - Actions
+      // MARK: - Actions
     private func addSet() {
-        withAnimation {
-            sets.append(UUID())
-        }
+        let newSet = WorkoutSet(type: workoutExercise.exercise.setType)
+        newSet.workoutExercise = workoutExercise   
+        workoutExercise.sets.append(newSet)
     }
 
     private func deleteSet(at offsets: IndexSet) {
-        withAnimation {
-            sets.remove(atOffsets: offsets)
-        }
+      workoutExercise.sets.remove(atOffsets: offsets)
     }
 
     private func moveSet(from source: IndexSet, to destination: Int) {
-        withAnimation {
-            sets.move(fromOffsets: source, toOffset: destination)
-        }
+      workoutExercise.sets.move(fromOffsets: source, toOffset: destination)
     }
-}
+  }
 
 
 
