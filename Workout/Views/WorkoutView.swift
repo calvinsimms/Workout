@@ -58,7 +58,6 @@ struct SetsInputSection: View {
     @Bindable var workoutExercise: WorkoutExercise
     @State private var isEditing = false
 
-
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             
@@ -83,14 +82,23 @@ struct SetsInputSection: View {
 
             
             List {
-                  ForEach($workoutExercise.sets) { $set in
-                      HStack {
-                          Text("\((workoutExercise.sets.firstIndex(of: set) ?? 0) + 1)")
-                              .frame(width: 20, alignment: .leading)
+                ForEach(workoutExercise.sets.sorted(by: { $0.order < $1.order })) { set in
+                    let binding = Binding(
+                        get: {
+                            workoutExercise.sets.first(where: { $0.id == set.id })!
+                        },
+                        set: { newValue in
+                            if let index = workoutExercise.sets.firstIndex(where: { $0.id == set.id }) {
+                                workoutExercise.sets[index] = newValue
+                            }
+                        }
+                    )
 
-                          ForEach(set.type.relevantAttributes) { attribute in
-                              attributeField(attribute: attribute, set: $set)
-                          }
+                    HStack {
+                        ForEach(set.type.relevantAttributes) { attribute in
+                            attributeField(attribute: attribute, set: binding)
+                        }
+                    
                       }
                       .listRowBackground(Color("Background"))
                   }
@@ -132,16 +140,23 @@ struct SetsInputSection: View {
       // MARK: - Actions
     private func addSet() {
         let newSet = WorkoutSet(type: workoutExercise.exercise.setType)
-        newSet.workoutExercise = workoutExercise   
+        newSet.workoutExercise = workoutExercise
+        newSet.order = workoutExercise.sets.count
         workoutExercise.sets.append(newSet)
     }
 
     private func deleteSet(at offsets: IndexSet) {
-      workoutExercise.sets.remove(atOffsets: offsets)
+        workoutExercise.sets.remove(atOffsets: offsets)
+        for (index, set) in workoutExercise.sets.enumerated() {
+            set.order = index
+        }
     }
 
-    private func moveSet(from source: IndexSet, to destination: Int) {
-      workoutExercise.sets.move(fromOffsets: source, toOffset: destination)
+    private func moveSet(from offsets: IndexSet, to newOffset: Int) {
+        workoutExercise.sets.move(fromOffsets: offsets, toOffset: newOffset)
+        for (index, set) in workoutExercise.sets.enumerated() {
+            set.order = index
+        }
     }
   }
 

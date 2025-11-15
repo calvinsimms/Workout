@@ -106,6 +106,7 @@ final class WorkoutSet: Identifiable {
     /// User inputs avergae heart rate for the exercise for statistical tracking
     var heartRate: Int?
 
+    var order: Int
 
     @Relationship(inverse: \WorkoutExercise.sets) var workoutExercise: WorkoutExercise?
     
@@ -128,7 +129,9 @@ final class WorkoutSet: Identifiable {
         duration: Double? = nil,
         distance: Double? = nil,
         resistance: Double? = nil,
-        heartRate: Int? = nil
+        heartRate: Int? = nil,
+        order: Int = 0,
+
     ) {
         self.id = UUID()
         self.type = type
@@ -140,5 +143,6 @@ final class WorkoutSet: Identifiable {
         self.distance = distance
         self.resistance = resistance
         self.heartRate = heartRate
+        self.order = order
     }
 }
