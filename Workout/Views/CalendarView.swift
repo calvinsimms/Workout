@@ -3,205 +3,12 @@
 //  Workout
 //
 //  Created by Calvin Simms on 2025-10-04.
-//  Optimized 2025-11-02
+//  Modernized 2025-11-15
 //
 
 import SwiftUI
 import Foundation
 import SwiftData
-
-// MARK: - CalendarViewModel
-@MainActor
-final class CalendarViewModel: ObservableObject {
-
-    // MARK: - Published
-
-    @Published private(set) var days: [Day] = []
-    @Published var currentDate: Date
-    @Published private(set) var events: [WorkoutEvent] = []
-
-    private var eventCache: [Int: [WorkoutEvent]] = [:]
-
-    private var monthlyCache: [String: [Int: [WorkoutEvent]]] = [:]
-
-    // MARK: - Private
-
-    private var context: ModelContext?
-    
-    private let calendar: Calendar = {
-        var cal = Calendar.current
-        cal.locale = .current
-        return cal
-    }()
-
-    private static let monthYearFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "LLLL yyyy"
-        return f
-    }()
-
-    // MARK: - Init
-
-    init() {
-        self.currentDate = Date()
-        generateDays(for: currentDate)
-    }
-
-    func setContext(_ newContext: ModelContext) {
-        guard context == nil else { return }
-        context = newContext
-        fetchEventsForCurrentMonth()
-    }
-
-    // MARK: - Visible Range Helpers
-
-    private func monthKey(for date: Date) -> String {
-        let comps = calendar.dateComponents([.year, .month], from: date)
-        return "\(comps.year ?? 0)-\(comps.month ?? 0)"
-    }
-
-    private func extendedMonthBounds(for date: Date) -> (start: Date, end: Date)? {
-        guard let firstOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: date)),
-              let start = calendar.date(byAdding: .month, value: -1, to: firstOfMonth),
-              let end = calendar.date(byAdding: .month, value: 2, to: firstOfMonth) else {
-            return nil
-        }
-        return (start, end)
-    }
-
-    private func dayKey(_ date: Date) -> Int {
-        let comps = calendar.dateComponents([.year, .month, .day], from: date)
-        return (comps.year ?? 0) * 10_000 + (comps.month ?? 0) * 100 + (comps.day ?? 0)
-    }
-
-    private func rebuildEventCache(from source: [WorkoutEvent]) {
-        var newCache: [Int: [WorkoutEvent]] = [:]
-        newCache.reserveCapacity(source.count)
-        for ev in source {
-            newCache[dayKey(ev.date), default: []].append(ev)
-        }
-        eventCache = newCache
-    }
-
-    // MARK: - Data Loading
-
-    func fetchEventsForCurrentMonth() {
-        guard let context else { return }
-
-        let key = monthKey(for: currentDate)
-        if let cached = monthlyCache[key] {
-            eventCache = cached
-            events = eventCache.values.flatMap { $0 }.sorted(by: { $0.date < $1.date })
-            return
-        }
-
-        guard let (start, end) = extendedMonthBounds(for: currentDate) else {
-            events = []
-            eventCache.removeAll()
-            return
-        }
-
-        let descriptor = FetchDescriptor<WorkoutEvent>(
-            predicate: #Predicate { ev in
-                ev.date >= start && ev.date < end
-            },
-            sortBy: [SortDescriptor(\.date, order: .forward)]
-        )
-
-        do {
-            let fetched = try context.fetch(descriptor)
-            events = fetched
-            rebuildEventCache(from: fetched)
-            monthlyCache[key] = eventCache
-        } catch {
-            print("⚠️ Failed to fetch events: \(error.localizedDescription)")
-            events = []
-            eventCache.removeAll()
-        }
-    }
-
-    // MARK: - Calendar Grid Generation
-
-    func generateDays(for date: Date) {
-        days.removeAll(keepingCapacity: true)
-
-        guard let firstOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: date)),
-              let _ = calendar.range(of: .day, in: .month, for: firstOfMonth) else { return }
-
-        let firstWeekday = calendar.component(.weekday, from: firstOfMonth)
-        let weekdayOffset = firstWeekday - calendar.firstWeekday
-        let leadingPadding = weekdayOffset < 0 ? weekdayOffset + 7 : weekdayOffset
-
-        guard let gridStart = calendar.date(byAdding: .day, value: -leadingPadding, to: firstOfMonth) else { return }
-
-        days.reserveCapacity(42)
-        for i in 0..<42 {
-            if let dayDate = calendar.date(byAdding: .day, value: i, to: gridStart) {
-                let isCurrentMonth = calendar.isDate(dayDate, equalTo: firstOfMonth, toGranularity: .month)
-                days.append(Day(date: dayDate, isWithinCurrentMonth: isCurrentMonth))
-            }
-        }
-    }
-
-    // MARK: - Month Navigation
-
-    func moveMonth(by offset: Int) {
-        guard let newDate = calendar.date(byAdding: .month, value: offset, to: currentDate),
-              !calendar.isDate(newDate, equalTo: currentDate, toGranularity: .month) else { return }
-
-        currentDate = newDate
-        generateDays(for: newDate)
-        fetchEventsForCurrentMonth()
-    }
-
-    // MARK: - Display Helpers
-
-    func monthYearText() -> String {
-        Self.monthYearFormatter.string(from: currentDate)
-    }
-
-    // MARK: - Event Utilities
-
-    func hasEvent(on date: Date) -> Bool {
-        !(eventCache[dayKey(date)] ?? []).isEmpty
-    }
-
-    func events(on date: Date) -> [WorkoutEvent] {
-        eventCache[dayKey(date)]?.sorted(by: { ($0.startTime ?? $0.date) < ($1.startTime ?? $1.date) }) ?? []
-    }
-
-    func deleteEvent(at offsets: IndexSet) {
-        guard let context else { return }
-        for index in offsets {
-            let event = events[index]
-            context.delete(event)
-        }
-        do {
-            try context.save()
-            monthlyCache.removeValue(forKey: monthKey(for: currentDate))
-            fetchEventsForCurrentMonth()
-        } catch {
-            print("⚠️ Failed to delete event: \(error.localizedDescription)")
-        }
-    }
-
-    func moveEvent(from source: IndexSet, to destination: Int) {
-        var reordered = events
-        reordered.move(fromOffsets: source, toOffset: destination)
-        events = reordered
-
-        
-    }
-
-    func refreshForToday() {
-        let today = Date()
-        currentDate = today
-        days.removeAll()
-        generateDays(for: today)
-        monthlyCache.removeAll()
-        fetchEventsForCurrentMonth()
-    }
-}
 
 // MARK: - Day Model
 
@@ -258,11 +65,20 @@ private struct DayCellView: View, Equatable {
 
 struct CustomCalendarGrid: View {
 
-    @ObservedObject var viewModel: CalendarViewModel
     @Binding var selectedDate: Date
+    @Binding var currentMonthDate: Date
+    let hasEvent: (Date) -> Bool
+
+    @State private var days: [Day] = []
 
     private let columns = Array(repeating: GridItem(.flexible()), count: 7)
     private let weekdaySymbols = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]
+
+    private var calendar: Calendar {
+        var cal = Calendar.current
+        cal.locale = .current
+        return cal
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -280,26 +96,29 @@ struct CustomCalendarGrid: View {
 
             // Grid
             LazyVGrid(columns: columns, spacing: 1) {
-                ForEach(viewModel.days) { day in
-                    let isSelected = Calendar.current.isDate(day.date, inSameDayAs: selectedDate)
-                    let isToday = Calendar.current.isDateInToday(day.date)
-                    let hasEvent = viewModel.hasEvent(on: day.date)
+                ForEach(days) { day in
+                    let isSelected = calendar.isDate(day.date, inSameDayAs: selectedDate)
+                    let isToday = calendar.isDateInToday(day.date)
+                    let hasEventForDay = hasEvent(day.date)
 
                     DayCellView(
                         day: day,
                         isSelected: isSelected,
                         isToday: isToday,
-                        hasEvent: hasEvent
+                        hasEvent: hasEventForDay
                     )
                     .onTapGesture {
                         withAnimation(.snappy) {
                             selectedDate = day.date
 
                             // If tapping a padding day, jump months
-                            if !Calendar.current.isDate(day.date, equalTo: viewModel.currentDate, toGranularity: .month) {
-                                viewModel.moveMonth(by:
-                                    Calendar.current.compare(day.date, to: viewModel.currentDate, toGranularity: .month) == .orderedAscending ? -1 : 1
-                                )
+                            if !calendar.isDate(day.date, equalTo: currentMonthDate, toGranularity: .month) {
+                                if let newMonth = calendar.date(
+                                    from: calendar.dateComponents([.year, .month], from: day.date)
+                                ) {
+                                    currentMonthDate = newMonth
+                                    generateDays(for: newMonth)
+                                }
                             }
                         }
                     }
@@ -313,7 +132,12 @@ struct CustomCalendarGrid: View {
                 Button("Today") {
                     let today = Date()
                     selectedDate = today
-                    viewModel.refreshForToday()
+                    if let thisMonth = calendar.date(
+                        from: calendar.dateComponents([.year, .month], from: today)
+                    ) {
+                        currentMonthDate = thisMonth
+                        generateDays(for: thisMonth)
+                    }
                 }
                 .font(.subheadline).bold()
                 .buttonStyle(.glass)
@@ -323,7 +147,7 @@ struct CustomCalendarGrid: View {
                 GlassEffectContainer(spacing: 30.0) {
                     HStack {
                         Button {
-                            viewModel.moveMonth(by: -1)
+                            moveMonth(by: -1)
                         } label: {
                             Image(systemName: "chevron.left")
                                 .font(.subheadline.weight(.semibold))
@@ -331,14 +155,12 @@ struct CustomCalendarGrid: View {
                         .buttonStyle(.glass)
                         
                         Button {
-                            viewModel.moveMonth(by: 1)
+                            moveMonth(by: 1)
                         } label: {
                             Image(systemName: "chevron.right")
-                                .font(.subheadline.weight(.semibold))   
+                                .font(.subheadline.weight(.semibold))
                         }
                         .buttonStyle(.glass)
-
-                        
                     }
                 }
 
@@ -346,6 +168,44 @@ struct CustomCalendarGrid: View {
             .padding(.horizontal, 18)
             .padding(.bottom, 10)
             .foregroundStyle(.black)
+        }
+        .onAppear {
+            generateDays(for: currentMonthDate)
+        }
+        .onChange(of: currentMonthDate) {
+            generateDays(for: currentMonthDate)
+        }
+    }
+
+    // MARK: - Helpers
+
+    private func moveMonth(by offset: Int) {
+        guard let newDate = calendar.date(byAdding: .month, value: offset, to: currentMonthDate) else { return }
+        currentMonthDate = newDate
+        generateDays(for: newDate)
+    }
+
+    private func generateDays(for date: Date) {
+        days.removeAll(keepingCapacity: true)
+
+        guard let firstOfMonth = calendar.date(
+            from: calendar.dateComponents([.year, .month], from: date)
+        ),
+        let _ = calendar.range(of: .day, in: .month, for: firstOfMonth)
+        else { return }
+
+        let firstWeekday = calendar.component(.weekday, from: firstOfMonth)
+        let weekdayOffset = firstWeekday - calendar.firstWeekday
+        let leadingPadding = weekdayOffset < 0 ? weekdayOffset + 7 : weekdayOffset
+
+        guard let gridStart = calendar.date(byAdding: .day, value: -leadingPadding, to: firstOfMonth) else { return }
+
+        days.reserveCapacity(42)
+        for i in 0..<42 {
+            if let dayDate = calendar.date(byAdding: .day, value: i, to: gridStart) {
+                let isCurrentMonth = calendar.isDate(dayDate, equalTo: firstOfMonth, toGranularity: .month)
+                days.append(Day(date: dayDate, isWithinCurrentMonth: isCurrentMonth))
+            }
         }
     }
 }
@@ -356,28 +216,60 @@ struct CalendarView: View {
 
     @Environment(\.modelContext) private var modelContext
 
+    // All workout events, live-updating via SwiftData
+    @Query(sort: [
+        SortDescriptor(\WorkoutEvent.date, order: .forward),
+        SortDescriptor(\WorkoutEvent.order, order: .forward)
+    ])
+    private var allEvents: [WorkoutEvent]
+
     @State private var selectedDate: Date = Date()
+    @State private var currentMonthDate: Date = Calendar.current.date(
+        from: Calendar.current.dateComponents([.year, .month], from: Date())
+    ) ?? Date()
+
     @State private var isAddWorkoutPresented = false
 
-    // Prevent duplicate set-up work on re-appear
-    @State private var didLoad = false
-    @State private var refreshTask: Task<Void, Never>? = nil
+    private static let monthYearFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "LLLL yyyy"
+        return f
+    }()
 
-    @StateObject private var viewModel = CalendarViewModel()
+    private var calendar: Calendar {
+        var cal = Calendar.current
+        cal.locale = .current
+        return cal
+    }
+
+    // Events for the currently selected day
+    private var eventsForSelectedDate: [WorkoutEvent] {
+        allEvents
+            .filter { calendar.isDate($0.date, inSameDayAs: selectedDate) }
+            .sorted { lhs, rhs in
+                if lhs.order != rhs.order {
+                    return lhs.order < rhs.order
+                }
+                let lTime = lhs.startTime ?? lhs.date
+                let rTime = rhs.startTime ?? rhs.date
+                return lTime < rTime
+            }
+    }
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
 
                 CustomCalendarGrid(
-                    viewModel: viewModel,
-                    selectedDate: $selectedDate
+                    selectedDate: $selectedDate,
+                    currentMonthDate: $currentMonthDate,
+                    hasEvent: { date in hasEvent(on: date) }
                 )
 
                 Divider()
 
                 List {
-                    let dayEvents = viewModel.events(on: selectedDate)
+                    let dayEvents = eventsForSelectedDate
 
                     Section {
                         if dayEvents.isEmpty {
@@ -402,15 +294,11 @@ struct CalendarView: View {
                                 }
                                 .listRowBackground(Color("Background"))
                             }
-                            .onDelete { indexSet in
-                                let allEvents = dayEvents
-                                let globalOffsets = IndexSet(indexSet.compactMap { idx in
-                                    viewModel.events.firstIndex { $0.id == allEvents[idx].id }
-                                })
-                                viewModel.deleteEvent(at: globalOffsets)
+                            .onDelete { offsets in
+                                deleteEvents(at: offsets, in: dayEvents)
                             }
                             .onMove { source, destination in
-                                viewModel.moveEvent(from: source, to: destination)
+                                moveEvents(from: source, to: destination, in: dayEvents)
                             }
                         }
                     }
@@ -424,7 +312,7 @@ struct CalendarView: View {
             .background(Color("Background"))
             .colorScheme(.light)
             .ignoresSafeArea(edges: .bottom)
-            .navigationTitle(Text(viewModel.monthYearText()))
+            .navigationTitle(Text(Self.monthYearFormatter.string(from: currentMonthDate)))
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     EditButton()
@@ -441,50 +329,44 @@ struct CalendarView: View {
                     }
                 }
             }
-            .sheet(isPresented: $isAddWorkoutPresented, onDismiss: {
-                viewModel.refreshForToday()
-            }) {
+            .sheet(isPresented: $isAddWorkoutPresented) {
                 WorkoutSelectionView(defaultDate: selectedDate)
                     .presentationDetents([.large])
-            }
-            .onAppear {
-                guard !didLoad else { return }
-                viewModel.setContext(modelContext)
-                scheduleMidnightRefresh()
-                didLoad = true
-            }
-            .onDisappear {
-                refreshTask?.cancel()
-            }
-            .task(id: viewModel.currentDate) {
-                viewModel.fetchEventsForCurrentMonth()
             }
         }
     }
 
-    // MARK: - Midnight Refresh (single loop, no recursion)
-    private func scheduleMidnightRefresh() {
-        refreshTask?.cancel()
-        refreshTask = Task.detached(priority: .background) { [weak viewModel] in
-            guard let viewModel else { return }
-            while !Task.isCancelled {
-                let now = Date()
-                let cal = Calendar.current
-                guard let nextMidnight = cal.nextDate(
-                    after: now,
-                    matching: DateComponents(hour: 0, minute: 0, second: 0),
-                    matchingPolicy: .nextTime,
-                    direction: .forward
-                ) else {
-                    try? await Task.sleep(nanoseconds: 60 * 1_000_000_000)
-                    continue
-                }
-                let interval = nextMidnight.timeIntervalSince(now)
-                try? await Task.sleep(nanoseconds: UInt64(max(0, interval) * 1_000_000_000))
-                await MainActor.run {
-                    viewModel.refreshForToday()
-                }
-            }
+    // MARK: - Helpers
+
+    private func hasEvent(on date: Date) -> Bool {
+        allEvents.contains { calendar.isDate($0.date, inSameDayAs: date) }
+    }
+
+    private func deleteEvents(at offsets: IndexSet, in dayEvents: [WorkoutEvent]) {
+        let toDelete = offsets.map { dayEvents[$0] }
+        for event in toDelete {
+            modelContext.delete(event)
+        }
+        do {
+            try modelContext.save()
+        } catch {
+            print("⚠️ Failed to delete events: \(error.localizedDescription)")
+        }
+    }
+
+    private func moveEvents(from source: IndexSet, to destination: Int, in dayEvents: [WorkoutEvent]) {
+        var reordered = dayEvents
+        reordered.move(fromOffsets: source, toOffset: destination)
+
+        // Reassign order just for this day's events
+        for (index, event) in reordered.enumerated() {
+            event.order = index
+        }
+
+        do {
+            try modelContext.save()
+        } catch {
+            print("⚠️ Failed to persist reordered events: \(error.localizedDescription)")
         }
     }
 }

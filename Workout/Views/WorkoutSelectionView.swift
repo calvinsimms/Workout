@@ -22,19 +22,38 @@ struct WorkoutSelectionView: View {
     @State private var showingExerciseSheet = false
     @State private var selectedExercises: Set<Exercise> = []
     @State private var selectedCategory: WorkoutCategory = .resistance
-    
-
-
+    @State private var exerciseOrder: [UUID] = []
+    private var editingEvent: WorkoutEvent?
         
     @State private var selectedType = "New"
     let newOrSaved = ["New", "Saved"]
     
     init(defaultDate: Date, sampleExercises: [Exercise]? = nil) {
-         _date = State(initialValue: defaultDate)
-         if let sampleExercises {
-             _selectedExercises = State(initialValue: Set(sampleExercises))
-         }
-     }
+        _date = State(initialValue: defaultDate)
+
+        if let sampleExercises {
+            let set = Set(sampleExercises)
+            _selectedExercises = State(initialValue: set)
+            _exerciseOrder = State(initialValue: set.map { $0.id })
+        }
+    }
+    
+    init(fromEvent event: WorkoutEvent) {
+        editingEvent = event
+
+        _date = State(initialValue: event.date)
+        _eventTitle = State(initialValue: event.title ?? "")
+
+        let orderedExercises = event.workoutExercises.sorted(by: { $0.order < $1.order })
+
+        let exercises = orderedExercises.map { $0.exercise }
+        _selectedExercises = State(initialValue: Set(exercises))
+        _exerciseOrder = State(initialValue: orderedExercises.map { $0.exercise.id })
+
+        if let firstCategory = exercises.first?.category {
+            _selectedCategory = State(initialValue: firstCategory)
+        }
+    }
 
     var body: some View {
         
@@ -116,14 +135,17 @@ struct WorkoutSelectionView: View {
 
                     } else {
                         Section {
-                            ForEach(Array(selectedExercises).sorted(by: { $0.name < $1.name }), id: \.id) { exercise in
-                                DisclosureGroup(exercise.name) {
-                                    Text("Targets will be here")
-                                        .padding(.vertical, 4)
+                            ForEach(exerciseOrder, id: \.self) { exerciseID in
+                                if let exercise = selectedExercises.first(where: { $0.id == exerciseID }) {
+                                    DisclosureGroup(exercise.name) {
+                                        Text("Targets will be here")
+                                            .padding(.vertical, 4)
+                                    }
+                                    .bold()
+                                    .listRowBackground(Color("Background"))
                                 }
-                                .bold()
-                                .listRowBackground(Color("Background"))
                             }
+                            .onMove(perform: moveExercise)
                             .onDelete(perform: deleteExercise)
                         }
                     }
@@ -133,11 +155,11 @@ struct WorkoutSelectionView: View {
             .background(Color("Background"))
             .tint(.black)
             .toolbar {
-                
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-                
+//                
+//                ToolbarItem(placement: .cancellationAction) {
+//                    Button("Cancel") { dismiss() }
+//                }
+//                
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
                         saveWorkoutEvent()
@@ -174,16 +196,63 @@ struct WorkoutSelectionView: View {
                     )
                 }
             }
+            .onChange(of: selectedExercises) {
+                for exercise in selectedExercises {
+                    if exerciseOrder.contains(exercise.id) == false {
+                        exerciseOrder.append(exercise.id)
+                    }
+                }
+
+                exerciseOrder.removeAll { id in
+                    selectedExercises.contains(where: { $0.id == id }) == false
+                }
+            }
         }
 
     }
     
     private func saveWorkoutEvent() {
-        // MARK: - SAVED TEMPLATE PATH
+        // -------------------------------------------------------
+        // EDITING EXISTING EVENT
+        // -------------------------------------------------------
+        if let event = editingEvent {
+            event.date = date
+            event.title = eventTitle.isEmpty ? nil : eventTitle
+
+            // Remove existing exercises
+            event.workoutExercises.removeAll()
+
+            for (index, exerciseID) in exerciseOrder.enumerated() {
+                guard let exercise = selectedExercises.first(where: { $0.id == exerciseID }) else { continue }
+
+                let exerciseLink = WorkoutExercise(
+                    notes: nil,
+                    targetNote: nil,
+                    targetMode: .simple,
+                    order: index,
+                    workoutEvent: event,
+                    exercise: exercise
+                )
+                
+                event.workoutExercises.append(exerciseLink)
+            }
+
+            do {
+                try context.save()
+                print("✅ Updated existing workout event.")
+            } catch {
+                print("⚠️ Failed to update event: \(error.localizedDescription)")
+            }
+
+            return
+        }
+
+        // -------------------------------------------------------
+        // CREATING A NEW EVENT
+        // -------------------------------------------------------
         if selectedType == "SAVED" {
             guard let selectedWorkout else { return }
 
-            // Fetch the selected workout into the current model context
             let id = selectedWorkout.persistentModelID
             let descriptor = FetchDescriptor<WorkoutTemplate>(
                 predicate: #Predicate { $0.persistentModelID == id },
@@ -195,31 +264,27 @@ struct WorkoutSelectionView: View {
                 return
             }
             
-            // Create a new WorkoutEvent linked to that template
             let newEvent = WorkoutEvent(
                 date: date,
                 title: eventTitle.isEmpty ? nil : eventTitle,
                 workoutTemplate: fetchedTemplate
             )
-            
+
             context.insert(newEvent)
-            
-            do {
-                try context.save()
-                print("✅ Saved event from template: \(fetchedTemplate.title)")
-            } catch {
-                print("⚠️ Failed to save template-based event: \(error.localizedDescription)")
-            }
-            
+            try? context.save()
+            print("✅ Saved new event from template.")
             return
         }
-    
+
+        // Create brand new custom event
         let newEvent = WorkoutEvent(
             date: date,
             title: eventTitle.isEmpty ? nil : eventTitle
         )
-        
-        for (index, exercise) in selectedExercises.sorted(by: { $0.name < $1.name }).enumerated() {
+
+        for (index, exerciseID) in exerciseOrder.enumerated() {
+            guard let exercise = selectedExercises.first(where: { $0.id == exerciseID }) else { continue }
+
             let workoutExercise = WorkoutExercise(
                 notes: nil,
                 targetNote: nil,
@@ -230,23 +295,25 @@ struct WorkoutSelectionView: View {
             )
             newEvent.workoutExercises.append(workoutExercise)
         }
-        
+
         context.insert(newEvent)
-        
-        do {
-            try context.save()
-            print("✅ Saved new custom event with \(selectedExercises.count) exercises.")
-        } catch {
-            print("⚠️ Failed to save new workout event: \(error.localizedDescription)")
-        }
+        try? context.save()
+        print("✅ Saved new custom event.")
     }
+
     
+    private func moveExercise(from source: IndexSet, to destination: Int) {
+        exerciseOrder.move(fromOffsets: source, toOffset: destination)
+    }
+
     private func deleteExercise(at offsets: IndexSet) {
-        let sortedExercises = Array(selectedExercises).sorted(by: { $0.name < $1.name })
         for index in offsets {
-            let exerciseToRemove = sortedExercises[index]
-            selectedExercises.remove(exerciseToRemove)
+            let id = exerciseOrder[index]
+            if let exercise = selectedExercises.first(where: { $0.id == id }) {
+                selectedExercises.remove(exercise)
+            }
         }
+        exerciseOrder.remove(atOffsets: offsets)
     }
 
 }

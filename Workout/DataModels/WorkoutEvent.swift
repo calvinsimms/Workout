@@ -44,6 +44,8 @@ final class WorkoutEvent: Identifiable {
     // Optional text field allowing users to add personal notes about this workout session.
     var notes: String?
     
+    var order: Int
+    
     
     // Optional link to a reusable workout template (can be nil for one-off sessions)
     @Relationship var workoutTemplate: WorkoutTemplate?
@@ -71,7 +73,8 @@ final class WorkoutEvent: Identifiable {
         title: String? = nil,
         workoutTemplate: WorkoutTemplate? = nil,
         startTime: Date? = nil,
-        notes: String? = nil
+        notes: String? = nil,
+        order: Int = 0
     ) {
         self.id = id
         self.date = date
@@ -79,5 +82,6 @@ final class WorkoutEvent: Identifiable {
         self.workoutTemplate = workoutTemplate
         self.startTime = startTime
         self.notes = notes
+        self.order = order
     }
 }

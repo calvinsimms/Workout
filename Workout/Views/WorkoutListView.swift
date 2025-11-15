@@ -15,6 +15,8 @@ struct WorkoutListView: View {
     @State private var isCreatingNewWorkout = false
     @State private var newWorkout = WorkoutTemplate(title: "", order: 0)
     @State private var expandedCategories: Set<WorkoutCategory> = []
+    @State private var selectedCategory: WorkoutCategory = .resistance
+
 
     @Query(sort: \WorkoutTemplate.order, order: .forward) private var workoutTemplates: [WorkoutTemplate]
     
@@ -33,7 +35,7 @@ struct WorkoutListView: View {
             filter: #Predicate<WorkoutEvent> { event in
                 event.date >= startOfDay && event.date < startOfTomorrow
             },
-            sort: [SortDescriptor(\.startTime, order: .forward)]
+            sort: [SortDescriptor(\WorkoutEvent.order)]
         )
     }
 
@@ -69,6 +71,8 @@ struct WorkoutListView: View {
                             }
                             .listRowBackground(Color("Background"))
                         }
+                        .onDelete(perform: deleteTodayEvents)
+                        .onMove(perform: moveTodayEvents)
                     }
                 }
 
@@ -78,55 +82,48 @@ struct WorkoutListView: View {
                     .fontWeight(.bold)
                     .foregroundColor(.black)
                 ) {
-                    ForEach(WorkoutCategory.allCases) { category in
-                        DisclosureGroup(
-                            isExpanded: Binding(
-                                get: { expandedCategories.contains(category) },
-                                set: { isExpanded in
-                                    withAnimation {
-                                        if isExpanded {
-                                            expandedCategories.insert(category)
-                                        } else {
-                                            expandedCategories.remove(category)
-                                        }
-                                    }
-                                }
-                            )
-                        ) {
-                            let categoryWorkouts = workoutsByCategory[category] ?? []
 
-                            ForEach(categoryWorkouts) { workout in
-                                NavigationLink {
-                                    WorkoutView(workoutTemplate: workout)
-                                } label: {
-                                    HStack {
-                                        Text(workout.title)
-                                            .font(.title3.bold())
-                                            .foregroundColor(.black)
-                                        Spacer()
-                                    }
-                                    .padding(.vertical, 5)
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                                .listRowBackground(Color("Background"))
-                                .tint(.black)
-                            }
-                            .onDelete { offsets in
-                                deleteWorkoutsForCategory(offsets, category: category)
-                            }
-                            .onMove { source, destination in
-                                moveWorkoutsForCategory(source, destination, category: category)
-                            }
-                        } label: {
-                            Text(category.rawValue)
-                                .font(.title3.bold())
-                                .foregroundColor(.black)
-                                .padding(.vertical, 5)
+                    Picker("Category", selection: $selectedCategory) {
+                        ForEach(WorkoutCategory.allCases) { category in
+                            Text(category.rawValue).tag(category)
                         }
-                        .listRowBackground(Color("Background"))
-                        .tint(.black)
+                    }
+                    .pickerStyle(.segmented)
+                    .listRowBackground(Color("Background"))
+
+                    let categoryWorkouts = workoutsByCategory[selectedCategory] ?? []
+
+                    if categoryWorkouts.isEmpty {
+                        
+                        Text("No saved workouts")
+                            .foregroundColor(.gray)
+                            .italic()
+                            .padding(.vertical, 5)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .listRowBackground(Color("Background"))
+                    } else {
+
+                        ForEach(categoryWorkouts) { workout in
+                            NavigationLink {
+                                WorkoutView(workoutTemplate: workout)
+                            } label: {
+                                Text(workout.title)
+                                    .font(.title3.bold())
+                                    .foregroundColor(.black)
+                                    .padding(.vertical, 5)
+                            }
+                            .buttonStyle(.plain)
+                            .listRowBackground(Color("Background"))
+                        }
+                        .onDelete { offsets in
+                            deleteWorkoutsForCategory(offsets, category: selectedCategory)
+                        }
+                        .onMove { source, destination in
+                            moveWorkoutsForCategory(source, destination, category: selectedCategory)
+                        }
                     }
                 }
+
             }
             .listStyle(GroupedListStyle())
             .listSectionSpacing(.compact)
@@ -165,6 +162,24 @@ struct WorkoutListView: View {
                 }
             }
         }
+    }
+    
+    private func deleteTodayEvents(_ offsets: IndexSet) {
+        for index in offsets {
+            context.delete(todaysEvents[index])
+        }
+        try? context.save()
+    }
+
+    private func moveTodayEvents(_ source: IndexSet, _ destination: Int) {
+        var reordered = todaysEvents
+        reordered.move(fromOffsets: source, toOffset: destination)
+
+        for (index, event) in reordered.enumerated() {
+            event.order = index
+        }
+
+        try? context.save()
     }
     
     private func addWorkout(_ workoutTemplate: WorkoutTemplate) {
