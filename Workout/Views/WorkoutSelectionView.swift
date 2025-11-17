@@ -218,87 +218,45 @@ struct WorkoutSelectionView: View {
         if let event = editingEvent {
             event.date = date
             event.title = eventTitle.isEmpty ? nil : eventTitle
-
-            // Remove existing exercises
-            event.workoutExercises.removeAll()
-
+            
+            // Current set of exercises in the event
+            let existing = Set(event.workoutExercises)
+            
+            // New selection
+            let selected = Set(selectedExercises.map { $0.id })
+            
+            // Delete removed exercises
+            for exercise in event.workoutExercises {
+                if !selected.contains(exercise.exercise.id) {
+                    context.delete(exercise)
+                }
+            }
+            
+            // Add new exercises
             for (index, exerciseID) in exerciseOrder.enumerated() {
                 guard let exercise = selectedExercises.first(where: { $0.id == exerciseID }) else { continue }
-
-                let exerciseLink = WorkoutExercise(
-                    notes: nil,
-                    targetNote: nil,
-                    targetMode: .simple,
-                    order: index,
-                    workoutEvent: event,
-                    exercise: exercise
-                )
                 
-                event.workoutExercises.append(exerciseLink)
-            }
-
-            do {
-                try context.save()
-                print("✅ Updated existing workout event.")
-            } catch {
-                print("⚠️ Failed to update event: \(error.localizedDescription)")
-            }
-
-            return
-        }
-
-        // -------------------------------------------------------
-        // CREATING A NEW EVENT
-        // -------------------------------------------------------
-        if selectedType == "SAVED" {
-            guard let selectedWorkout else { return }
-
-            let id = selectedWorkout.persistentModelID
-            let descriptor = FetchDescriptor<WorkoutTemplate>(
-                predicate: #Predicate { $0.persistentModelID == id },
-                sortBy: []
-            )
-            
-            guard let fetchedTemplate = try? context.fetch(descriptor).first else {
-                assertionFailure("WorkoutTemplate not found in this context")
-                return
+                if !existing.contains(where: { $0.exercise.id == exerciseID }) {
+                    let newLink = WorkoutExercise(
+                        notes: nil,
+                        targetNote: nil,
+                        targetMode: .simple,
+                        order: index,
+                        workoutEvent: event,
+                        exercise: exercise
+                    )
+                    event.workoutExercises.append(newLink)
+                } else {
+                    // Update order for existing exercise
+                    if let existingLink = event.workoutExercises.first(where: { $0.exercise.id == exerciseID }) {
+                        existingLink.order = index
+                    }
+                }
             }
             
-            let newEvent = WorkoutEvent(
-                date: date,
-                title: eventTitle.isEmpty ? nil : eventTitle,
-                workoutTemplate: fetchedTemplate
-            )
-
-            context.insert(newEvent)
             try? context.save()
-            print("✅ Saved new event from template.")
-            return
         }
 
-        // Create brand new custom event
-        let newEvent = WorkoutEvent(
-            date: date,
-            title: eventTitle.isEmpty ? nil : eventTitle
-        )
-
-        for (index, exerciseID) in exerciseOrder.enumerated() {
-            guard let exercise = selectedExercises.first(where: { $0.id == exerciseID }) else { continue }
-
-            let workoutExercise = WorkoutExercise(
-                notes: nil,
-                targetNote: nil,
-                targetMode: .simple,
-                order: index,
-                workoutEvent: newEvent,
-                exercise: exercise
-            )
-            newEvent.workoutExercises.append(workoutExercise)
-        }
-
-        context.insert(newEvent)
-        try? context.save()
-        print("✅ Saved new custom event.")
     }
 
     

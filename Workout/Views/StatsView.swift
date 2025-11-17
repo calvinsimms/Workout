@@ -49,10 +49,8 @@ struct StatsView: View {
             }
             .background(Color("Background"))
             .navigationTitle("Statistics")
-            .sheet(isPresented: $showStatsSheet) {
-                if let exercise = selectedExercise {
-                    ExerciseStatsSheet(exercise: exercise)
-                }
+            .sheet(item: $selectedExercise) { exercise in
+                ExerciseStatsSheet(exercise: exercise)
             }
         }
     }
@@ -61,11 +59,9 @@ struct StatsView: View {
     private func exerciseRow(_ exercise: Exercise) -> some View {
         Button {
             selectedExercise = exercise
-            showStatsSheet = true
         } label: {
             HStack {
-                Text(exercise.name)
-                    .font(.headline)
+                Text(exercise.name).font(.headline)
                 Spacer()
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -89,9 +85,10 @@ struct StatsView: View {
 //
 
 enum StatType: String, CaseIterable, Identifiable {
-    case e1rm = "Estimated 1RM"
+    case e1rm = "E1RM"
     case volume = "Volume"
-    case intensity = "Avg Intensity"
+    case intensity = "Intensity"
+    case rpe = "RPE"
     
     var id: String { rawValue }
 }
@@ -119,6 +116,7 @@ struct ExerciseStatsSheet: View {
     @State private var customStartDate: Date = Calendar.current.date(byAdding: .month, value: -1, to: Date()) ?? Date()
     @State private var customEndDate: Date = Date()
     @State private var selectedPoint: ChartPoint?
+    @State private var workoutsToShowCount = 10
 
     
     var exercise: Exercise
@@ -126,6 +124,54 @@ struct ExerciseStatsSheet: View {
     var chartData: [ChartPoint] {
         exercise.chartPoints(for: selectedStatType, in: selectedRange, customStart: customStartDate, customEnd: customEndDate)
     }
+    
+    var xDomain: ClosedRange<Date>? {
+        if selectedRange == .all {
+            return nil
+        }
+        let now = Date()
+        let startDate: Date
+        let endDate: Date
+        switch selectedRange {
+        case .week:
+            startDate = Calendar.current.date(byAdding: .day, value: -7, to: now) ?? now
+            endDate = now
+        case .lastMonth:
+            startDate = Calendar.current.date(byAdding: .month, value: -1, to: now) ?? now
+            endDate = now
+        case .lastThreeMonths:
+            startDate = Calendar.current.date(byAdding: .month, value: -3, to: now) ?? now
+            endDate = now
+        case .custom:
+            startDate = customStartDate
+            endDate = customEndDate
+        case .all:
+            return nil
+        }
+
+        if let first = chartData.first?.date, let last = chartData.last?.date, first == last {
+            let paddedStart = Calendar.current.date(byAdding: .day, value: -1, to: first) ?? first
+            let paddedEnd = Calendar.current.date(byAdding: .day, value: 1, to: first) ?? first
+            return paddedStart...paddedEnd
+        }
+        return startDate...endDate
+    }
+
+    var yDomain: ClosedRange<Double>? {
+        guard let minValue = chartData.map(\.value).min(),
+              let maxValue = chartData.map(\.value).max() else {
+            return nil
+        }
+        if minValue == maxValue {
+            let padding = maxValue * 0.1
+            return (maxValue - padding)...(maxValue + padding)
+        }
+        let padding = (maxValue - minValue) * 0.2
+        let lower = max(minValue - padding, 0)
+        let upper = maxValue + padding
+        return lower...upper
+    }
+
     
     var body: some View {
         NavigationStack {
@@ -155,6 +201,8 @@ struct ExerciseStatsSheet: View {
                             )
                         }
                         .frame(height: 200)
+                        .chartXScale(domain: xDomain ?? ((chartData.first?.date ?? Date())...(chartData.last?.date ?? Date())))
+                        .chartYScale(domain: yDomain ?? ((chartData.map(\.value).min() ?? 0)...(chartData.map(\.value).max() ?? 1)))
                         .chartOverlay { proxy in
                             GeometryReader { geo in
                                 Rectangle().fill(Color.clear).contentShape(Rectangle())
@@ -389,14 +437,29 @@ extension Exercise {
         }
 
         return groupedByDay.compactMap { day, sets in
-            guard let maxE1RM = sets.compactMap({ $0.adjustedE1RM }).max(), maxE1RM > 0 else { return nil }
-            
-            let avgIntensity = sets.compactMap { $0.adjustedE1RM }.map { ($0 / maxE1RM) * 100 }.reduce(0, +) / Double(sets.count)
-            
+            guard let maxE1RM = sets.compactMap({ $0.adjustedE1RM }).max(),
+                  maxE1RM > 0 else { return nil }
+            let avgWeight = sets.compactMap { $0.weight }.reduce(0, +) / Double(sets.count)
+            let avgIntensity = (avgWeight / maxE1RM) * 100
             return ChartPoint(date: day, value: avgIntensity)
         }
         .sorted { $0.date < $1.date }
     }
+    
+    var averageRPE: [ChartPoint] {
+        let groupedByDay = Dictionary(grouping: allSetsWithAdjustedE1RM) {
+            Calendar.current.startOfDay(for: $0.date)
+        }
+        return groupedByDay.compactMap { day, sets in
+            let rpes = sets.compactMap { $0.rpe }
+            guard !rpes.isEmpty else { return nil }
+            let avgRPE = rpes.reduce(0, +) / Double(rpes.count)
+            return ChartPoint(date: day, value: avgRPE)
+        }
+        .sorted { $0.date < $1.date }
+    }
+
+
     
     func chartPoints(for stat: StatType, in range: StatRange, customStart: Date? = nil, customEnd: Date? = nil) -> [ChartPoint] {
         let data: [ChartPoint]
@@ -406,6 +469,7 @@ extension Exercise {
             data = topE1RMHistory.map { ChartPoint(date: $0.date, value: $0.e1rm) }
         case .volume: data = volumeHistory
         case .intensity: data = averageIntensity
+        case .rpe: data = averageRPE
         }
 
         let now = Date()

@@ -14,18 +14,18 @@ struct WorkoutView: View {
     
     var workoutEvent: WorkoutEvent?
     var workoutTemplate: WorkoutTemplate?
-
+    
     @State private var isEditing = false
     @StateObject private var timerManager = TimerManager()
     @State private var showingLapTime = false
     @State private var showingLapHistory = false
-
+    
     @State private var orderedExercises: [WorkoutExercise] = []
-
+    
     private var currentLapNumber: Int {
         timerManager.lapTimes.count + 1
     }
-
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             if workoutEvent != nil {
@@ -39,7 +39,7 @@ struct WorkoutView: View {
                 } else {
                     exerciseList($orderedExercises, context: context)
                 }
-
+                
             } else if workoutTemplate != nil {
                 // Template support coming later
                 Text("Template mode not implemented yet")
@@ -62,14 +62,14 @@ struct WorkoutView: View {
                     isEditing = true
                 }
             }
-
+            
             ToolbarItemGroup(placement: .bottomBar) {
                 Button(action: { showingLapHistory = true }) {
                     Image(systemName: "list.bullet")
                         .font(.system(size: 14))
                         .foregroundColor(.black)
                 }
-
+                
                 Button(action: { showingLapTime.toggle() }) {
                     HStack(spacing: 10) {
                         if showingLapTime {
@@ -85,7 +85,7 @@ struct WorkoutView: View {
                     }
                     .fixedSize()
                 }
-
+                
                 if timerManager.isRunning {
                     Button(action: {
                         timerManager.lap()
@@ -106,7 +106,7 @@ struct WorkoutView: View {
                     }
                     .disabled(timerManager.elapsedTime == 0)
                 }
-
+                
                 Button(action: {
                     timerManager.isRunning ? timerManager.stop() : timerManager.start()
                 }) {
@@ -131,6 +131,27 @@ struct WorkoutView: View {
                     .presentationDragIndicator(.visible)
             }
         }
+//        .overlay(alignment: .bottomLeading) {
+//            VStack(alignment: .leading) {
+//                Text("DEBUG — Set Orders")
+//                    .font(.caption).bold()
+//
+//                ForEach(orderedExercises) { ex in
+//                    VStack(alignment: .leading) {
+//                        Text(ex.exercise.name)
+//                            .font(.caption).bold()
+//
+//                        ForEach(ex.sets.sorted(by: { $0.order < $1.order })) { set in
+//                            Text("• Set \(set.id.uuidString.prefix(4)) — order: \(set.order)")
+//                                .font(.caption2)
+//                        }
+//                    }
+//                    .padding(.bottom, 4)
+//                }
+//            }
+//            .padding(8)
+//            .background(.yellow.opacity(0.4))
+//        }
     }
 }
 
@@ -143,10 +164,9 @@ private func exerciseList(
     List {
         ForEach(exercises.wrappedValue, id: \.id) { workoutExercise in
             DisclosureGroup {
-                VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: 10) {
                     Text("Targets")
                         .font(.headline)
-                        .padding(.bottom, 10)
 
                     TextField(
                         "Targets",
@@ -157,13 +177,15 @@ private func exerciseList(
                     )
                     .textFieldStyle(.plain)
                     .font(.subheadline)
-                    .padding(.bottom, 10)
+                    
+                    Divider()
 
                     SetsInputSection(workoutExercise: workoutExercise)
                     
+                    Divider()
+                    
                     Text("Notes")
                         .font(.headline)
-                        .padding(.vertical, 10)
 
                     TextField(
                         "Notes",
@@ -256,9 +278,15 @@ struct SetsInputSection: View {
     @Bindable var workoutExercise: WorkoutExercise
     @Environment(\.modelContext) private var context
 
+    // Keep sets sorted by order, but return bindings directly
+    var sortedSets: [Binding<WorkoutSet>] {
+        workoutExercise.sets.indices
+            .sorted { workoutExercise.sets[$0].order < workoutExercise.sets[$1].order }
+            .map { $workoutExercise.sets[$0] }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-
             HStack {
                 Text("Sets")
                     .font(.headline)
@@ -269,15 +297,12 @@ struct SetsInputSection: View {
                 .buttonStyle(.glass)
             }
 
-            ForEach($workoutExercise.sets.sorted(by: { $0.order.wrappedValue < $1.order.wrappedValue })) { $set in
+            ForEach(sortedSets, id: \.id) { $set in
                 setRow(setBinding: $set)
-                    .padding(.vertical, 4)
             }
-        
         }
     }
 
-    // MARK: - Add new set
     private func addSet() {
         let newOrder = workoutExercise.sets.count
         let eventDate = workoutExercise.workoutEvent?.date ?? Date()
@@ -288,32 +313,21 @@ struct SetsInputSection: View {
             order: newOrder
         )
 
-        
         set.workoutExercise = workoutExercise
-
-        
         workoutExercise.sets.append(set)
-        
 
         try? context.save()
     }
 
-
-
-    
     private func deleteSet(_ set: WorkoutSet) {
-
-        guard let index = workoutExercise.sets.firstIndex(where: { $0.id == set.id }) else { return }
-
-        // 1. Remove from model
-        workoutExercise.sets.remove(at: index)
-
-        // 2. Delete object from SwiftData
+        // Remove from context and array
         context.delete(set)
+        workoutExercise.sets.removeAll { $0.id == set.id }
 
-        // 3. Reorder remaining sets
-        for (i, s) in workoutExercise.sets.enumerated() {
-            s.order = i
+        // Reassign order based on sorted position
+        let sorted = workoutExercise.sets.sorted { $0.order < $1.order }
+        for (index, s) in sorted.enumerated() {
+            s.order = index
         }
 
         try? context.save()
@@ -323,68 +337,52 @@ struct SetsInputSection: View {
     @ViewBuilder
     private func setRow(setBinding: Binding<WorkoutSet>) -> some View {
         let set = setBinding.wrappedValue
+
         HStack {
-            
             if set.type.relevantAttributes.contains(.weight) {
-                VStack(alignment: .leading) {
-                    TextField("Weight", value: setBinding.weight, format: .number)
-                        .keyboardType(.decimalPad)
-                        .textFieldStyle(.plain)
-                }
+                TextField("Weight", value: setBinding.weight, format: .number)
+                    .keyboardType(.decimalPad)
+                    .textFieldStyle(.plain)
             }
 
             if set.type.relevantAttributes.contains(.reps) {
-                VStack(alignment: .leading) {
-                    TextField("Reps", value: setBinding.reps, format: .number)
-                        .keyboardType(.numberPad)
-                        .textFieldStyle(.plain)
-                }
+                TextField("Reps", value: setBinding.reps, format: .number)
+                    .keyboardType(.numberPad)
+                    .textFieldStyle(.plain)
             }
 
             if set.type.relevantAttributes.contains(.rpe) {
-                VStack(alignment: .leading) {
-                    TextField("RPE", value: setBinding.rpe, format: .number)
-                        .keyboardType(.decimalPad)
-                        .textFieldStyle(.plain)
-                        .onChange(of: set.rpe) { oldValue, newValue in
-                            let clamped = min(max(newValue ?? 0, 0), 10)
-                            setBinding.rpe.wrappedValue = clamped
-                        }
-                }
+                TextField("RPE", value: setBinding.rpe, format: .number)
+                    .keyboardType(.decimalPad)
+                    .onSubmit {
+                        set.rpe = min(max(set.rpe ?? 0, 0), 10)
+                    }
             }
 
             if set.type.relevantAttributes.contains(.duration) {
-                VStack(alignment: .leading) {
-                    TextField("Duration (sec)", value: setBinding.duration, format: .number)
-                        .keyboardType(.decimalPad)
-                        .textFieldStyle(.plain)
-                }
+                TextField("Duration", value: setBinding.duration, format: .number)
+                    .keyboardType(.decimalPad)
+                    .textFieldStyle(.plain)
             }
 
             if set.type.relevantAttributes.contains(.distance) {
-                VStack(alignment: .leading) {
-                    TextField("Distance", value: setBinding.distance, format: .number)
-                        .keyboardType(.decimalPad)
-                        .textFieldStyle(.plain)
-                }
+                TextField("Distance", value: setBinding.distance, format: .number)
+                    .keyboardType(.decimalPad)
+                    .textFieldStyle(.plain)
             }
 
             if set.type.relevantAttributes.contains(.resistance) {
-                VStack(alignment: .leading) {
-                    TextField("Resistance", value: setBinding.resistance, format: .number)
-                        .keyboardType(.decimalPad)
-                        .textFieldStyle(.plain)
-                }
+                TextField("Resistance", value: setBinding.resistance, format: .number)
+                    .keyboardType(.decimalPad)
+                    .textFieldStyle(.plain)
             }
 
             if set.type.relevantAttributes.contains(.heartRate) {
-                VStack(alignment: .leading) {
-                    TextField("HR", value: setBinding.heartRate, format: .number)
-                        .keyboardType(.numberPad)
-                        .textFieldStyle(.plain)
-                }
+                TextField("HR", value: setBinding.heartRate, format: .number)
+                    .keyboardType(.numberPad)
+                    .textFieldStyle(.plain)
             }
-            
+
             Button {
                 deleteSet(set)
             } label: {
@@ -393,7 +391,6 @@ struct SetsInputSection: View {
             .buttonStyle(.plain)
         }
     }
-
 }
 
 @MainActor
