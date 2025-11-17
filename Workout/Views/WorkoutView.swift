@@ -9,7 +9,6 @@ import SwiftUI
 import SwiftData
 import Combine
 
-
 struct WorkoutView: View {
     @Environment(\.modelContext) private var context
     
@@ -17,14 +16,11 @@ struct WorkoutView: View {
     var workoutTemplate: WorkoutTemplate?
 
     @State private var isEditing = false
-    @State private var notes: String = ""
     @StateObject private var timerManager = TimerManager()
     @State private var showingLapTime = false
     @State private var showingLapHistory = false
-    
-    var exercises: [WorkoutExercise] {
-        workoutEvent?.workoutExercises.sorted(by: { $0.order < $1.order }) ?? []
-    }
+
+    @State private var orderedExercises: [WorkoutExercise] = []
 
     private var currentLapNumber: Int {
         timerManager.lapTimes.count + 1
@@ -32,40 +28,34 @@ struct WorkoutView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            if workoutEvent != nil {
+                if orderedExercises.isEmpty {
+                    Text("No exercises added yet")
+                        .foregroundColor(.gray)
+                        .italic()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal)
+                    Spacer()
+                } else {
+                    exerciseList($orderedExercises, context: context)
+                }
+
+            } else if workoutTemplate != nil {
+                // Template support coming later
+                Text("Template mode not implemented yet")
+                    .italic()
+                    .padding()
+                Spacer()
+            }
+        }
+        .onAppear {
             if let event = workoutEvent {
-                if event.workoutExercises.isEmpty {
-                    Text("No exercises added yet")
-                        .foregroundColor(.gray)
-                        .italic()
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal)
-                    Spacer()
-                } else {
-                    exerciseList(
-                        event.workoutExercises.sorted { $0.order < $1.order },
-                        context: context
-                    )
-                }
-            } else if let template = workoutTemplate {
-                if template.workoutExercises.isEmpty {
-                    Text("No exercises added yet")
-                        .foregroundColor(.gray)
-                        .italic()
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal)
-                    
-                    Spacer()
-                } else {
-                    exerciseList(
-                        template.workoutExercises.sorted { $0.order < $1.order },
-                        context: context
-                    )
-                }
+                orderedExercises = event.workoutExercises.sorted { $0.order < $1.order }
             }
         }
         .foregroundColor(.black)
         .background(Color("Background"))
-        .navigationTitle(workoutEvent?.displayTitle ?? workoutTemplate?.title ?? "Workout")
+        .navigationTitle(workoutEvent?.displayTitle ?? "Workout")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button("Edit") {
@@ -74,45 +64,26 @@ struct WorkoutView: View {
             }
 
             ToolbarItemGroup(placement: .bottomBar) {
-                Button(action: {
-                    showingLapHistory = true
-                }) {
+                Button(action: { showingLapHistory = true }) {
                     Image(systemName: "list.bullet")
                         .font(.system(size: 14))
                         .foregroundColor(.black)
                 }
-                
-                Button(action: {
-                    showingLapTime.toggle()
-                }) {
+
+                Button(action: { showingLapTime.toggle() }) {
                     HStack(spacing: 10) {
                         if showingLapTime {
                             Text("Lap \(max(timerManager.lapTimes.count + 1, 1))")
-                                .font(.system(
-                                    size: UIFont.preferredFont(forTextStyle: .headline).pointSize,
-                                    weight: .regular
-                                ))
+                                .font(.headline)
                             Text(timerManager.formattedTime(timerManager.lapTime))
-                                .font(.system(
-                                    size: UIFont.preferredFont(forTextStyle: .headline).pointSize,
-                                    weight: .regular,
-                                    design: .monospaced
-                                ))
+                                .font(.system(.headline, design: .monospaced))
                         } else {
-                            Text("Total")
-                                .font(.system(
-                                    size: UIFont.preferredFont(forTextStyle: .headline).pointSize,
-                                    weight: .regular
-                                ))
+                            Text("Total").font(.headline)
                             Text(timerManager.formattedTime(timerManager.elapsedTime))
-                                .font(.system(
-                                    size: UIFont.preferredFont(forTextStyle: .headline).pointSize,
-                                    weight: .regular,
-                                    design: .monospaced
-                                ))
+                                .font(.system(.headline, design: .monospaced))
                         }
                     }
-                    .fixedSize(horizontal: true, vertical: false)
+                    .fixedSize()
                 }
 
                 if timerManager.isRunning {
@@ -146,12 +117,7 @@ struct WorkoutView: View {
             }
         }
         .navigationDestination(isPresented: $isEditing) {
-            if let template = workoutTemplate {
-                CreateWorkoutView(
-                    workoutTemplate: template,
-                    isNewWorkout: false
-                )
-            } else if let event = workoutEvent {
+            if let event = workoutEvent {
                 WorkoutSelectionView(fromEvent: event)
             }
         }
@@ -169,15 +135,19 @@ struct WorkoutView: View {
 }
 
 @ViewBuilder
-private func exerciseList(_ exercises: [WorkoutExercise], context: ModelContext) -> some View {
+private func exerciseList(
+    _ exercises: Binding<[WorkoutExercise]>,
+    context: ModelContext
+) -> some View {
+
     List {
-        ForEach(exercises, id: \.id) { workoutExercise in
+        ForEach(exercises.wrappedValue, id: \.id) { workoutExercise in
             DisclosureGroup {
                 VStack(alignment: .leading, spacing: 0) {
                     Text("Targets")
                         .font(.headline)
                         .padding(.bottom, 10)
-                    
+
                     TextField(
                         "Targets",
                         text: Binding(
@@ -187,15 +157,13 @@ private func exerciseList(_ exercises: [WorkoutExercise], context: ModelContext)
                     )
                     .textFieldStyle(.plain)
                     .font(.subheadline)
-                    
-                    Divider()
-                        .padding(.vertical, 10)
+                    .padding(.bottom, 10)
 
                     SetsInputSection(workoutExercise: workoutExercise)
                     
                     Text("Notes")
                         .font(.headline)
-                        .padding(.bottom, 10)
+                        .padding(.vertical, 10)
 
                     TextField(
                         "Notes",
@@ -212,18 +180,18 @@ private func exerciseList(_ exercises: [WorkoutExercise], context: ModelContext)
                     Button {
                         workoutExercise.isCompleted.toggle()
                     } label: {
-                        Image(systemName: workoutExercise.isCompleted ? "checkmark.circle.fill" : "circle.fill")
+                        Image(systemName: workoutExercise.isCompleted
+                              ? "checkmark.circle.fill"
+                              : "circle.fill")
                             .foregroundColor(workoutExercise.isCompleted ? .black : .white)
                             .glassEffect()
                             .font(.title3)
                             .scaleEffect(workoutExercise.isCompleted ? 1.1 : 1.0)
-                            .animation(
-                                .spring(response: 0.35, dampingFraction: 0.6),
-                                value: workoutExercise.isCompleted
-                            )
+                            .animation(.spring(response: 0.35, dampingFraction: 0.6),
+                                       value: workoutExercise.isCompleted)
                     }
                     .buttonStyle(.plain)
-                    
+
                     Text(workoutExercise.exercise.name)
                         .font(.system(.title3, weight: .semibold))
                 }
@@ -232,37 +200,27 @@ private func exerciseList(_ exercises: [WorkoutExercise], context: ModelContext)
             .listRowBackground(Color("Background"))
         }
         .onMove { source, destination in
-            moveExercise(
-                exercises: exercises,
-                from: source,
-                to: destination,
-                context: context
-            )
+            moveExercise(exercises: exercises, from: source, to: destination, context: context)
         }
         .onDelete { offsets in
-            deleteExercise(
-                exercises: exercises,
-                offsets: offsets,
-                context: context
-            )
+            deleteExercise(exercises: exercises, offsets: offsets, context: context)
         }
     }
     .listStyle(.plain)
     .tint(.black)
 }
 
+
 private func moveExercise(
-    exercises: [WorkoutExercise],
+    exercises: Binding<[WorkoutExercise]>,
     from source: IndexSet,
     to destination: Int,
     context: ModelContext
 ) {
-    // Work on a local copy that reflects the visible order
-    var mutable = exercises
-    mutable.move(fromOffsets: source, toOffset: destination)
+    exercises.wrappedValue.move(fromOffsets: source, toOffset: destination)
 
-    // Reassign orders based on the new order
-    for (index, exercise) in mutable.enumerated() {
+    // rewrite all order values to match new positions
+    for (index, exercise) in exercises.wrappedValue.enumerated() {
         exercise.order = index
     }
 
@@ -270,29 +228,22 @@ private func moveExercise(
 }
 
 private func deleteExercise(
-    exercises: [WorkoutExercise],
+    exercises: Binding<[WorkoutExercise]>,
     offsets: IndexSet,
     context: ModelContext
 ) {
-    // Local copy in the same order as displayed
-    var mutable = exercises
+    let toDelete = offsets.map { exercises.wrappedValue[$0] }
 
-    // Objects to delete based on visible indices
-    let objectsToDelete = offsets.compactMap { index -> WorkoutExercise? in
-        guard index < mutable.count else { return nil }
-        return mutable[index]
+    // remove from list source first
+    exercises.wrappedValue.remove(atOffsets: offsets)
+
+    // delete from SwiftData
+    for ex in toDelete {
+        context.delete(ex)
     }
 
-    // Remove from local copy first (so we can rewrite order)
-    mutable.remove(atOffsets: offsets)
-
-    // Delete from persistence
-    for obj in objectsToDelete {
-        context.delete(obj)
-    }
-
-    // Rewrite order for remaining items
-    for (index, exercise) in mutable.enumerated() {
+    // reassign orders
+    for (index, exercise) in exercises.wrappedValue.enumerated() {
         exercise.order = index
     }
 
@@ -303,128 +254,147 @@ private func deleteExercise(
 
 struct SetsInputSection: View {
     @Bindable var workoutExercise: WorkoutExercise
-    @State private var isEditing = false
+    @Environment(\.modelContext) private var context
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: 10) {
+
             HStack {
                 Text("Sets")
                     .font(.headline)
                 Spacer()
-//                EditButton()
-//                    .buttonStyle(.glass)
-//                    .opacity(workoutExercise.sets.isEmpty ? 0 : 1)
-                Button {
-                    addSet()
-                } label: {
+                Button(action: addSet) {
                     Image(systemName: "plus")
-                        .font(.title3)
                 }
                 .buttonStyle(.glass)
             }
 
-            Divider()
-                .padding(.top, 10)
-
-            List {
-                ForEach(Array(workoutExercise.sets.enumerated()), id: \.element.id) { index, set in
-                    // ✅ Guard against out-of-range indices during SwiftUI updates
-                    let binding = Binding<WorkoutSet>(
-                        get: {
-                            guard index < workoutExercise.sets.count else {
-                                // Fallback so SwiftUI doesn’t crash while views are updating
-                                return workoutExercise.sets.last ?? set
-                            }
-                            return workoutExercise.sets[index]
-                        },
-                        set: { newValue in
-                            guard index < workoutExercise.sets.count else { return }
-                            workoutExercise.sets[index] = newValue
-                        }
-                    )
-
-                    HStack {
-                        ForEach(set.type.relevantAttributes) { attribute in
-                            attributeField(attribute: attribute, set: binding)
-                        }
-                    }
-                    .listRowBackground(Color("Background"))
-                }
-                .onDelete(perform: deleteSet)
-                .onMove(perform: moveSet)
+            ForEach($workoutExercise.sets.sorted(by: { $0.order.wrappedValue < $1.order.wrappedValue })) { $set in
+                setRow(setBinding: $set)
+                    .padding(.vertical, 4)
             }
-            .frame(height: CGFloat(workoutExercise.sets.count) * 44 + 20)
-            .listStyle(.plain)
+        
         }
     }
 
-    @ViewBuilder
-    private func attributeField(attribute: WorkoutAttribute, set: Binding<WorkoutSet>) -> some View {
-        switch attribute {
-        case .weight:
-            TextField("Weight", value: set.weight, format: .number)
-                .keyboardType(.decimalPad)
-        case .reps:
-            TextField("Reps", value: set.reps, format: .number)
-                .keyboardType(.numberPad)
-        case .rpe:
-            TextField(
-                "RPE",
-                value: set.rpe,
-                format: .number.precision(.fractionLength(0...1))
-            )
-            .keyboardType(.decimalPad)
-        case .duration:
-            TextField("Duration", value: set.duration, format: .number)
-                .keyboardType(.decimalPad)
-        case .distance:
-            TextField("Distance", value: set.distance, format: .number)
-                .keyboardType(.decimalPad)
-        case .resistance:
-            TextField("Resistance", value: set.resistance, format: .number)
-                .keyboardType(.decimalPad)
-        case .heartRate:
-            TextField("Heart Rate", value: set.heartRate, format: .number)
-                .keyboardType(.numberPad)
-        }
-    }
-
-    // MARK: - Actions
-
+    // MARK: - Add new set
     private func addSet() {
-        // Prefer the WorkoutEvent date if it exists
+        let newOrder = workoutExercise.sets.count
         let eventDate = workoutExercise.workoutEvent?.date ?? Date()
 
-        // Normalize so sets always belong to a calendar day (no time component)
-        let normalized = Calendar.current.startOfDay(for: eventDate)
-
-        let newSet = WorkoutSet(
+        let set = WorkoutSet(
             type: workoutExercise.exercise.setType,
-            date: normalized
+            date: eventDate,
+            order: newOrder
         )
 
-        newSet.workoutExercise = workoutExercise
-        newSet.order = workoutExercise.sets.count
-        workoutExercise.sets.append(newSet)
+        
+        set.workoutExercise = workoutExercise
+
+        
+        workoutExercise.sets.append(set)
+        
+
+        try? context.save()
     }
 
 
-    private func deleteSet(at offsets: IndexSet) {
-        workoutExercise.sets.remove(atOffsets: offsets)
-        for (index, set) in workoutExercise.sets.enumerated() {
-            set.order = index
+
+    
+    private func deleteSet(_ set: WorkoutSet) {
+
+        guard let index = workoutExercise.sets.firstIndex(where: { $0.id == set.id }) else { return }
+
+        // 1. Remove from model
+        workoutExercise.sets.remove(at: index)
+
+        // 2. Delete object from SwiftData
+        context.delete(set)
+
+        // 3. Reorder remaining sets
+        for (i, s) in workoutExercise.sets.enumerated() {
+            s.order = i
+        }
+
+        try? context.save()
+    }
+
+
+    @ViewBuilder
+    private func setRow(setBinding: Binding<WorkoutSet>) -> some View {
+        let set = setBinding.wrappedValue
+        HStack {
+            
+            if set.type.relevantAttributes.contains(.weight) {
+                VStack(alignment: .leading) {
+                    TextField("Weight", value: setBinding.weight, format: .number)
+                        .keyboardType(.decimalPad)
+                        .textFieldStyle(.plain)
+                }
+            }
+
+            if set.type.relevantAttributes.contains(.reps) {
+                VStack(alignment: .leading) {
+                    TextField("Reps", value: setBinding.reps, format: .number)
+                        .keyboardType(.numberPad)
+                        .textFieldStyle(.plain)
+                }
+            }
+
+            if set.type.relevantAttributes.contains(.rpe) {
+                VStack(alignment: .leading) {
+                    TextField("RPE", value: setBinding.rpe, format: .number)
+                        .keyboardType(.decimalPad)
+                        .textFieldStyle(.plain)
+                        .onChange(of: set.rpe) { oldValue, newValue in
+                            let clamped = min(max(newValue ?? 0, 0), 10)
+                            setBinding.rpe.wrappedValue = clamped
+                        }
+                }
+            }
+
+            if set.type.relevantAttributes.contains(.duration) {
+                VStack(alignment: .leading) {
+                    TextField("Duration (sec)", value: setBinding.duration, format: .number)
+                        .keyboardType(.decimalPad)
+                        .textFieldStyle(.plain)
+                }
+            }
+
+            if set.type.relevantAttributes.contains(.distance) {
+                VStack(alignment: .leading) {
+                    TextField("Distance", value: setBinding.distance, format: .number)
+                        .keyboardType(.decimalPad)
+                        .textFieldStyle(.plain)
+                }
+            }
+
+            if set.type.relevantAttributes.contains(.resistance) {
+                VStack(alignment: .leading) {
+                    TextField("Resistance", value: setBinding.resistance, format: .number)
+                        .keyboardType(.decimalPad)
+                        .textFieldStyle(.plain)
+                }
+            }
+
+            if set.type.relevantAttributes.contains(.heartRate) {
+                VStack(alignment: .leading) {
+                    TextField("HR", value: setBinding.heartRate, format: .number)
+                        .keyboardType(.numberPad)
+                        .textFieldStyle(.plain)
+                }
+            }
+            
+            Button {
+                deleteSet(set)
+            } label: {
+                Image(systemName: "trash")
+            }
+            .buttonStyle(.plain)
         }
     }
 
-    private func moveSet(from offsets: IndexSet, to newOffset: Int) {
-        workoutExercise.sets.move(fromOffsets: offsets, toOffset: newOffset)
-        for (index, set) in workoutExercise.sets.enumerated() {
-            set.order = index
-        }
-    }
 }
-
-// MARK: - TimerManager & LapHistorySheet
 
 @MainActor
 final class TimerManager: ObservableObject {
@@ -507,51 +477,61 @@ struct LapHistorySheet: View {
 // MARK: - Preview
 
 #Preview {
+    // Sample Exercises
     let squat = Exercise(
         name: "Barbell Squat",
         category: .resistance,
         subCategory: .legs
     )
-    let deadlift = Exercise(
-        name: "Deadlift",
-        category: .cardio
-    )
-    let legPress = Exercise(
-        name: "Leg Press",
+
+    let bench = Exercise(
+        name: "Bench Press",
         category: .resistance,
-        subCategory: .legs
+        subCategory: .chest
     )
 
-    let template = WorkoutTemplate(
-        title: "Leg Day"
+    // Sample Workout Event
+    let event = WorkoutEvent(
+        date: .now,
+        title: "Demo Workout"
     )
 
+    // Sample WorkoutExercises
     let squatExercise = WorkoutExercise(
-        notes: "Focus on keeping core tight",
-        targetNote: "3 sets of 8 reps @ 75%",
-        order: 1,
-        workoutTemplate: template,
+        notes: "Keep chest up",
+        targetNote: "3 x 5 @ 80%",
+        order: 0,
+        workoutEvent: event,
         exercise: squat
     )
 
-    let deadliftExercise = WorkoutExercise(
-        order: 2,
-        workoutTemplate: template,
-        exercise: deadlift
+    squatExercise.sets = [
+        WorkoutSet(type: squat.setType, weight: 225, reps: 5, order: 0),
+        WorkoutSet(type: squat.setType, weight: 225, reps: 5, order: 1),
+        WorkoutSet(type: squat.setType, weight: 225, reps: 5, order: 2)
+    ]
+
+    let benchExercise = WorkoutExercise(
+        order: 1,
+        workoutEvent: event,
+        exercise: bench
     )
 
-    let legPressExercise = WorkoutExercise(
-        order: 3,
-        workoutTemplate: template,
-        exercise: legPress
-    )
+    benchExercise.sets = [
+        WorkoutSet(type: bench.setType, weight: 135, reps: 8, order: 0),
+        WorkoutSet(type: bench.setType, weight: 135, reps: 8, order: 1)
+    ]
 
-    template.workoutExercises = [squatExercise, deadliftExercise, legPressExercise]
+    // Assign exercises to event
+    event.workoutExercises = [squatExercise, benchExercise]
 
-    return WorkoutView(workoutTemplate: template)
+    // PREVIEW IN A MODEL CONTAINER
+    return WorkoutView(workoutEvent: event)
         .modelContainer(for: [
             Exercise.self,
-            WorkoutTemplate.self,
-            WorkoutExercise.self
+            WorkoutEvent.self,
+            WorkoutExercise.self,
+            WorkoutSet.self,
+            WorkoutTemplate.self
         ])
 }

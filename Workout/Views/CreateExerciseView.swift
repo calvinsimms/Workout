@@ -87,6 +87,7 @@ struct CreateExerciseView: View {
     
     // MARK: - Body
     var body: some View {
+        
         Form {
             
             // Exercise Name Input
@@ -178,12 +179,6 @@ struct CreateExerciseView: View {
 
             }
             
-            // Cancel Button
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Cancel") {
-                    dismiss()
-                }
-            }
         }
         .onAppear {
             // Ensure both are initialized before saving

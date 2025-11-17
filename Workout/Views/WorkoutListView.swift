@@ -16,7 +16,7 @@ struct WorkoutListView: View {
     @State private var newWorkout = WorkoutTemplate(title: "", order: 0)
     @State private var expandedCategories: Set<WorkoutCategory> = []
     @State private var selectedCategory: WorkoutCategory = .resistance
-
+    @State private var showingWorkoutSelection = false
 
     @Query(sort: \WorkoutTemplate.order, order: .forward) private var workoutTemplates: [WorkoutTemplate]
     
@@ -143,24 +143,19 @@ struct WorkoutListView: View {
                         .tint(.black)
                 }
             }
-
+            
             ToolbarItem(placement: .navigationBarTrailing) {
-                NavigationLink(
-                    destination: CreateWorkoutView(
-                        workoutTemplate: newWorkout,
-                        isNewWorkout: true,
-                        workoutCategory: .resistance,
-                        onSave: { workout in
-                            addWorkout(workout)
-                            newWorkout = WorkoutTemplate(title: "", order: 0)
-                        }
-                    )
-                ) {
-                    Image(systemName: "plus")
-                        .font(.headline)
-                        .foregroundColor(.black)
+                Button {
+                      showingWorkoutSelection = true
+                  } label: {
+                      Image(systemName: "plus")
+                          .font(.headline)
+                          .foregroundColor(.black)
                 }
             }
+        }
+        .sheet(isPresented: $showingWorkoutSelection) {
+            WorkoutSelectionView(defaultDate: Date())
         }
     }
     

@@ -20,18 +20,15 @@ struct StatsView: View {
     var body: some View {
         NavigationStack {
             VStack {
-
-                // MARK: - Category Picker
-                Picker("Category", selection: $selectedCategory) {
-                    ForEach(WorkoutCategory.allCases) { category in
-                        Text(category.rawValue).tag(category)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .padding(.horizontal)
-
-                // MARK: - Exercise List
                 List {
+                    Picker("Category", selection: $selectedCategory) {
+                        ForEach(WorkoutCategory.allCases) { category in
+                            Text(category.rawValue).tag(category)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .listRowBackground(Color("Background"))
+
                     if selectedCategory == .resistance {
                         ForEach(SubCategory.allCases) { sub in
                             DisclosureGroup(sub.rawValue) {
@@ -60,7 +57,7 @@ struct StatsView: View {
         }
     }
 
-    // MARK: - Row Builder
+
     private func exerciseRow(_ exercise: Exercise) -> some View {
         Button {
             selectedExercise = exercise
@@ -78,7 +75,6 @@ struct StatsView: View {
         .listRowBackground(Color("Background"))
     }
 
-    // MARK: - Filtering Helpers
     private func exercisesFor(category: WorkoutCategory) -> [Exercise] {
         exercises.filter { $0.category == category }
     }
@@ -92,104 +88,210 @@ struct StatsView: View {
 // MARK: - Exercise Stats Sheet
 //
 
+enum StatType: String, CaseIterable, Identifiable {
+    case e1rm = "Estimated 1RM"
+    case volume = "Volume"
+    case intensity = "Avg Intensity"
+    
+    var id: String { rawValue }
+}
+
+enum StatRange: String, CaseIterable, Identifiable {
+    case all = "All"
+    case week = "Week"
+    case lastMonth = "Month"
+    case lastThreeMonths = "3 Months"
+    case custom = "Custom"
+    
+    var id: String { rawValue }
+}
+
+struct ChartPoint: Identifiable {
+    let id = UUID()
+    let date: Date
+    let value: Double
+}
+
 struct ExerciseStatsSheet: View {
     @State private var showTopOnly = false
+    @State private var selectedStatType: StatType = .e1rm
+    @State private var selectedRange: StatRange = .all
+    @State private var customStartDate: Date = Calendar.current.date(byAdding: .month, value: -1, to: Date()) ?? Date()
+    @State private var customEndDate: Date = Date()
+    @State private var selectedPoint: ChartPoint?
 
     
     var exercise: Exercise
-
+    
+    var chartData: [ChartPoint] {
+        exercise.chartPoints(for: selectedStatType, in: selectedRange, customStart: customStartDate, customEnd: customEndDate)
+    }
+    
     var body: some View {
         NavigationStack {
             VStack(alignment: .leading) {
 
                 List {
-
-                    // MARK: - E1RM Chart
-                    Section("Estimated 1RM Chart") {
-                        if exercise.topE1RMHistory.isEmpty {
-                            Text("No E1RM data available yet.")
-                                .foregroundStyle(.gray)
-                        } else {
-                            Chart(exercise.topE1RMHistory) { point in
-                                LineMark(
-                                    x: .value("Date", point.date),
-                                    y: .value("E1RM", point.e1rm)
-                                )
-                                .interpolationMethod(.catmullRom)
-
-                                PointMark(
-                                    x: .value("Date", point.date),
-                                    y: .value("E1RM", point.e1rm)
-                                )
+                    
+                    Picker("Stats", selection: $selectedStatType) {
+                        ForEach(StatType.allCases) { type in
+                            Text(type.rawValue).tag(type)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    
+                    if exercise.topE1RMHistory.isEmpty {
+                        Text("No exercise data available yet.")
+                            .foregroundStyle(.gray)
+                    } else {
+                        Chart(chartData) { point in
+                            LineMark(
+                                x: .value("Date", point.date),
+                                y: .value("Value", point.value)
+                            )
+                            PointMark(
+                                x: .value("Date", point.date),
+                                y: .value("Value", point.value)
+                            )
+                        }
+                        .frame(height: 200)
+                        .chartOverlay { proxy in
+                            GeometryReader { geo in
+                                Rectangle().fill(Color.clear).contentShape(Rectangle())
+                                    .gesture(
+                                        DragGesture(minimumDistance: 0)
+                                            .onChanged { value in
+                                                let location = value.location
+                                                if let date: Date = proxy.value(atX: location.x) {
+                                                    // find closest point
+                                                    if let nearest = chartData.min(by: { abs($0.date.timeIntervalSince1970 - date.timeIntervalSince1970) < abs($1.date.timeIntervalSince1970 - date.timeIntervalSince1970) }) {
+                                                        selectedPoint = nearest
+                                                    }
+                                                }
+                                            }
+                                            .onEnded { _ in
+                                                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                                    selectedPoint = nil
+                                                }
+                                            }
+                                    )
                             }
-                            .frame(height: 200)
+                        }
+                        .overlay(alignment: .topLeading) {
+                            if let selected = selectedPoint {
+                                Text("\(selected.value, specifier: "%.1f")")
+                                    .padding(6)
+                                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+                                    .transition(.opacity)
+                                    
+                            }
                         }
                     }
                     
+                    
+                    Picker("Range", selection: $selectedRange) {
+                        ForEach(StatRange.allCases) { range in
+                            Text(range.rawValue).tag(range)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+
+                    if selectedRange == .custom {
+                        DatePicker("From", selection: $customStartDate, displayedComponents: .date)
+                                
+    
+                        DatePicker("To", selection: $customEndDate, displayedComponents: .date)
+                                
+
+                    }
                     HStack {
-                           Text("Set History")
-                           Spacer()
+                        Text("Change:")
+                        
+                        Spacer()
+                        
+                        let points = exercise.chartPoints(for: selectedStatType, in: selectedRange, customStart: customStartDate, customEnd: customEndDate)
+                        if let firstValue = points.first?.value, let lastValue = points.last?.value {
+                            let diff = lastValue - firstValue
+                            let percent = (diff / firstValue) * 100
+                            Text("\(diff >= 0 ? "+" : "")\(diff, specifier: "%.1f") (\(percent >= 0 ? "+" : "")\(percent, specifier: "%.1f")%)")
+                                .foregroundColor(.black)
+                        } else {
+                            Text("-")
+                                .foregroundColor(.gray)
+                        }
+                    }
 
-                           Button {
-                               withAnimation(.easeInOut) {
-                                   showTopOnly.toggle()
-                               }
-                           } label: {
-                               Text(showTopOnly ? "Show All" : "Top Sets Only")
-                                   .font(.caption)
-                                   .bold()
-                           }
-                           .buttonStyle(.glass)
-                       }
-
-                   let setsToDisplay = showTopOnly
-                       ? Array(exercise.topSetsByDate)
-                           .sorted { $0.date > $1.date }
-                       : exercise.allSets
                     
-                    ForEach(setsToDisplay) { set in
+                    Section(header:
                         HStack {
-                            Text(set.date.formatted(date: .abbreviated, time: .omitted))
-                                .font(.caption)
-
+                            Text("Set History")
+                                .font(.headline)
                             Spacer()
-
-                            if exercise.topSetsByDate.contains(set) {
-                                Text("TOP")
-                                    .font(.caption2)
-                                    .bold()
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 2)
-                                    .background(.gray.opacity(0.15))
-                                    .foregroundColor(.black)
-                                    .clipShape(Capsule())
-                            }
-
-                            if let weight = set.weight {
-                                Text("\(weight, format: .number) lbs")
-                            }
-
-                            if let reps = set.reps {
-                                Text("x\(reps)")
-                            }
-
-                            if let rpe = set.rpe {
-                                Text("RPE \(rpe, format: .number.precision(.fractionLength(1...1)))")
-                            }
-
-                            if let e1rm = set.estimated1RM {
-                                Text("E1RM \(e1rm, format: .number.precision(.fractionLength(1)))")
+                            Button {
+                                showTopOnly.toggle()
+                            } label: {
+                                Text(showTopOnly ? "Show All" : "Top Sets Only")
                                     .font(.caption)
-                                    .foregroundStyle(.secondary)
+                                    .bold()
+                            }
+                            .buttonStyle(.glass)
+                        }
+                    ) {
+                        let setsToDisplay = showTopOnly
+                            ? Array(exercise.topSetsByDate)
+                                .sorted { $0.date > $1.date }
+                            : exercise.allSetsWithAdjustedE1RM.sorted {
+                                if Calendar.current.isDate($0.date, inSameDayAs: $1.date) {
+                                    return ($0.adjustedE1RM ?? 0) > ($1.adjustedE1RM ?? 0)
+                                } else {
+                                    return $0.date > $1.date
+                                }
+                            }
+
+                        ForEach(setsToDisplay) { set in
+                            HStack {
+                                Text(set.date.formatted(date: .abbreviated, time: .omitted))
+                                    .font(.caption)
+                                Spacer()
+                                if exercise.topSetsByDate.contains(set) {
+                                    Text("TOP")
+                                        .font(.caption2)
+                                        .bold()
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 2)
+                                        .background(.gray.opacity(0.15))
+                                        .foregroundColor(.black)
+                                        .clipShape(Capsule())
+                                }
+
+                                if let weight = set.weight {
+                                    Text("\(weight, format: .number) lbs")
+                                }
+
+                                if let reps = set.reps {
+                                    Text("x\(reps)")
+                                }
+
+                                if let rpe = set.rpe {
+                                    Text("RPE \(rpe, format: .number.precision(.fractionLength(1...1)))")
+                                }
+
+                                if let e1rm = set.adjustedE1RM {
+                                    Text("E1RM \(e1rm, format: .number.precision(.fractionLength(1)))")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
                             }
                         }
                     }
 
+            
                 }
                 .listStyle(.plain)
             }
             .navigationTitle("\(exercise.name)")
             .navigationBarTitleDisplayMode(.inline)
+            
         }
     }
 }
@@ -205,74 +307,144 @@ struct E1RMPoint: Identifiable {
 }
 
 extension WorkoutSet {
-    var estimated1RM: Double? {
+    var adjustedE1RM: Double? {
         guard let weight = weight,
               let reps = reps,
               reps > 0 else { return nil }
-
-        return weight * (36.0 / (37.0 - Double(reps)))
+        
+        let rpeValue = rpe ?? 10
+        
+        let repsAtRPE10 = Double(reps) + (10 - rpeValue)
+        
+        return weight * (36.0 / (37.0 - repsAtRPE10))
     }
 }
 
 extension Exercise {
 
-    /// Total number of WorkoutSets ever performed for this exercise
-    var totalSetCount: Int {
-        workoutExercises.reduce(0) { $0 + $1.sets.count }
+    var allSetsWithAdjustedE1RM: [WorkoutSet] {
+        workoutExercises
+            .flatMap { $0.sets }
+            .filter { $0.adjustedE1RM != nil }
     }
 
-    /// All sets across all WorkoutExercises for this Exercise
-    var allSets: [WorkoutSet] {
-        workoutExercises.flatMap { $0.sets }
-    }
-
-    /// Returns only the top (highest E1RM) set for each workout day.
     var topE1RMHistory: [E1RMPoint] {
-        // 1. Group sets by calendar day
-        let grouped = Dictionary(grouping: allSets) { set in
-            Calendar.current.startOfDay(for: set.date)
+        let grouped = Dictionary(grouping: allSetsWithAdjustedE1RM) {
+            Calendar.current.startOfDay(for: $0.date)
         }
 
-        // 2. For each day, pick the set with the highest E1RM
-        let topPerDay = grouped.compactMap { (_, sets) -> E1RMPoint? in
-            let bestSet = sets
-                .compactMap { set -> (Date, Double)? in
-                    guard let value = set.estimated1RM else { return nil }
-                    return (set.date, value)
+        return grouped.compactMap { (_, sets) -> E1RMPoint? in
+            guard let best = sets.max(by: { ($0.adjustedE1RM ?? 0) < ($1.adjustedE1RM ?? 0) }) else { return nil }
+            return E1RMPoint(date: best.date, e1rm: best.adjustedE1RM!)
+        }
+        .sorted { $0.date < $1.date }
+    }
+
+    var setsSortedByDayAndE1RM: [(day: Date, sets: [WorkoutSet])] {
+        let grouped = Dictionary(grouping: allSetsWithAdjustedE1RM) {
+            Calendar.current.startOfDay(for: $0.date)
+        }
+
+        return grouped
+            .map { day, sets in
+                (
+                    day: day,
+                    sets: sets.sorted { ($0.adjustedE1RM ?? 0) > ($1.adjustedE1RM ?? 0) }
+                )
+            }
+            .sorted { $0.day > $1.day }
+    }
+
+    var topSetsByDate: [WorkoutSet] {
+        let grouped = Dictionary(grouping: allSetsWithAdjustedE1RM) {
+            Calendar.current.startOfDay(for: $0.date)
+        }
+
+        return grouped.compactMap { (_, sets) in
+            sets.max(by: { ($0.adjustedE1RM ?? 0) < ($1.adjustedE1RM ?? 0) })
+        }
+        .sorted { $0.date > $1.date }
+    }
+
+    var volumeHistory: [ChartPoint] {
+        let grouped = Dictionary(grouping: allSetsWithAdjustedE1RM) {
+            Calendar.current.startOfDay(for: $0.date)
+        }
+
+        return grouped.compactMap { day, sets in
+            let volume = sets.reduce(0) { total, set in
+                if let w = set.weight, let r = set.reps {
+                    return total + (w * Double(r))
                 }
-                .max(by: { $0.1 < $1.1 }) // highest E1RM
+                return total
+            }
+            return ChartPoint(date: day, value: volume)
+        }
+        .sorted { $0.date < $1.date }
+    }
 
-            guard let best = bestSet else { return nil }
-
-            return E1RMPoint(date: best.0, e1rm: best.1)
+    var averageIntensity: [ChartPoint] {
+        let groupedByDay = Dictionary(grouping: allSetsWithAdjustedE1RM) {
+            Calendar.current.startOfDay(for: $0.date)
         }
 
-        // 3. Sort for chart
-        return topPerDay.sorted(by: { $0.date < $1.date })
+        return groupedByDay.compactMap { day, sets in
+            guard let maxE1RM = sets.compactMap({ $0.adjustedE1RM }).max(), maxE1RM > 0 else { return nil }
+            
+            let avgIntensity = sets.compactMap { $0.adjustedE1RM }.map { ($0 / maxE1RM) * 100 }.reduce(0, +) / Double(sets.count)
+            
+            return ChartPoint(date: day, value: avgIntensity)
+        }
+        .sorted { $0.date < $1.date }
     }
     
-    var topSetsByDate: Set<WorkoutSet> {
-        var result = Set<WorkoutSet>()
-        let grouped = Dictionary(grouping: allSets) { Calendar.current.startOfDay(for: $0.date) }
-
-        for (_, sets) in grouped {
-            // Pick the set with the highest E1RM
-            let bestSet = sets
-                .filter { $0.estimated1RM != nil }
-                .max(by: { ($0.estimated1RM ?? 0) < ($1.estimated1RM ?? 0) })
-
-            if let best = bestSet {
-                result.insert(best)
-            }
+    func chartPoints(for stat: StatType, in range: StatRange, customStart: Date? = nil, customEnd: Date? = nil) -> [ChartPoint] {
+        let data: [ChartPoint]
+        
+        switch stat {
+        case .e1rm:
+            data = topE1RMHistory.map { ChartPoint(date: $0.date, value: $0.e1rm) }
+        case .volume: data = volumeHistory
+        case .intensity: data = averageIntensity
         }
 
-        return result
+        let now = Date()
+        let startDate: Date
+        let endDate: Date = range == .custom ? (customEnd ?? now) : now
+
+        switch range {
+        case .all:
+            startDate = data.first?.date ?? now
+        case .week:
+            startDate = Calendar.current.date(byAdding: .day, value: -7, to: now) ?? now
+        case .lastMonth:
+            startDate = Calendar.current.date(byAdding: .month, value: -1, to: now) ?? now
+        case .lastThreeMonths:
+            startDate = Calendar.current.date(byAdding: .month, value: -3, to: now) ?? now
+        case .custom:
+            startDate = customStart ?? now
+        }
+
+        return data.filter { $0.date >= startDate && $0.date <= endDate }
     }
+
+
+    func difference(for stat: StatType, in range: StatRange, customStart: Date? = nil, customEnd: Date? = nil) -> Double? {
+        let points = chartPoints(for: stat, in: range, customStart: customStart, customEnd: customEnd).sorted { $0.date < $1.date }
+        guard let first = points.first?.value, let last = points.last?.value else { return nil }
+        return last - first
+    }
+    
 }
+
 
 //
 // MARK: - Preview
 //
+
+#Preview {
+    StatsView()
+}
 
 #Preview("Exercise Stats Sheet Preview") {
     // Mock WorkoutTemplate
@@ -290,7 +462,7 @@ extension Exercise {
         isBodyweight: false
     )
 
-    // Mock Sets
+    // Mock Sets with different RPEs
     let set1 = WorkoutSet(
         type: .resistance,
         date: Date().addingTimeInterval(-3600),
@@ -307,6 +479,14 @@ extension Exercise {
         rpe: 8.0
     )
 
+    let set3 = WorkoutSet(
+        type: .resistance,
+        date: Date().addingTimeInterval(-7200),
+        weight: 160,
+        reps: 8,
+        rpe: 7.5
+    )
+
     // Link sets → workoutExercise → exercise
     let workoutExercise = WorkoutExercise(
         order: 0,
@@ -314,8 +494,9 @@ extension Exercise {
         exercise: exercise
     )
 
-    workoutExercise.sets = [set1, set2]
+    workoutExercise.sets = [set1, set2, set3]
     exercise.workoutExercises = [workoutExercise]
 
+    // Preview ExerciseStatsSheet
     return ExerciseStatsSheet(exercise: exercise)
 }
