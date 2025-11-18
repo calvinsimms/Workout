@@ -8,6 +8,7 @@
 import Foundation
 import SwiftData
 
+
 // MARK: - defining subcategories for exercises
 // these will fall into overall categories (resistance , cardio, and other)
 enum SubCategory: String, CaseIterable, Identifiable, Codable {

@@ -8,6 +8,7 @@
 import Foundation
 import SwiftData
 
+
 // MARK: - Target Mode Enumeration
 /// Determines whether the exercise uses simple or advanced target tracking.
 enum TargetMode: String, Codable, CaseIterable, Identifiable {
@@ -68,8 +69,6 @@ final class WorkoutExercise: Identifiable, Hashable {
     
     @Relationship(deleteRule: .cascade) var sets: [WorkoutSet] = []
     
-    // MARK: - Initializer
-    // MARK: - Initializers
 
     /// Used when attaching to a WorkoutTemplate (e.g., predefined workouts)
     init(

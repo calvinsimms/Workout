@@ -119,7 +119,7 @@ struct ExerciseSelectionView: View {
         .navigationTitle("Select Exercises")
         .toolbar {
                       
-            ToolbarItem(placement: .navigationBarTrailing) {
+            ToolbarItem(placement: .topBarTrailing) {
                 Button(action: {
                     newExercise = Exercise(name: "", category: workoutCategory)
                     showingCreateExercise = true

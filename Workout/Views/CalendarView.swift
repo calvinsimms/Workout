@@ -91,7 +91,6 @@ struct CustomCalendarGrid: View {
                         .frame(maxWidth: .infinity)
                 }
             }
-            .padding(.horizontal, 10)
             .padding(.bottom, 5)
 
             // Grid
@@ -124,7 +123,6 @@ struct CustomCalendarGrid: View {
                     }
                 }
             }
-            .padding(.horizontal, 10)
             .padding(.bottom, 6)
 
             HStack {
@@ -165,10 +163,10 @@ struct CustomCalendarGrid: View {
                 }
 
             }
-            .padding(.horizontal, 18)
-            .padding(.bottom, 10)
             .foregroundStyle(.black)
         }
+        .background(Color("Background"))
+
         .onAppear {
             generateDays(for: currentMonthDate)
         }
@@ -258,68 +256,63 @@ struct CalendarView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-
+            List {
                 CustomCalendarGrid(
                     selectedDate: $selectedDate,
                     currentMonthDate: $currentMonthDate,
                     hasEvent: { date in hasEvent(on: date) }
-                )
+                )            .listRowBackground(Color("Background"))
 
-                Divider()
 
-                List {
-                    let dayEvents = eventsForSelectedDate
 
-                    Section {
-                        if dayEvents.isEmpty {
-                            Text("No workouts planned today")
-                                .foregroundColor(.gray)
-                                .italic()
-                                .padding(.vertical, 5)
-                                .listRowBackground(Color("Background"))
-                        } else {
-                            ForEach(dayEvents) { event in
-                                NavigationLink {
-                                    if let template = event.workoutTemplate {
-                                        WorkoutView(workoutTemplate: template)
-                                    } else {
-                                        WorkoutView(workoutEvent: event)
-                                    }
-                                } label: {
-                                    Text(event.displayTitle)
-                                        .font(.title3.bold())
-                                        .foregroundColor(.black)
-                                        .padding(.vertical, 5)
+                let dayEvents = eventsForSelectedDate
+
+                Section {
+                    if dayEvents.isEmpty {
+                        Text("No workouts planned today")
+                            .foregroundColor(.gray)
+                            .italic()
+                            .padding(.vertical, 5)
+                            .listRowBackground(Color("Background"))
+                    } else {
+                        ForEach(dayEvents) { event in
+                            NavigationLink {
+                                if let template = event.workoutTemplate {
+                                    WorkoutView(workoutTemplate: template)
+                                } else {
+                                    WorkoutView(workoutEvent: event)
                                 }
-                                .listRowBackground(Color("Background"))
+                            } label: {
+                                Text(event.displayTitle)
+                                    .font(.title3.bold())
+                                    .padding(.vertical, 5)
                             }
-                            .onDelete { offsets in
-                                deleteEvents(at: offsets, in: dayEvents)
-                            }
-                            .onMove { source, destination in
-                                moveEvents(from: source, to: destination, in: dayEvents)
-                            }
+                            .listRowBackground(Color("Background"))
                         }
+                        .onDelete { offsets in
+                            deleteEvents(at: offsets, in: dayEvents)
+                        }
+                        .onMove { source, destination in
+                            moveEvents(from: source, to: destination, in: dayEvents)
+                        }
+                        
+                    
                     }
-                }
-                .listStyle(.plain)
-                .safeAreaInset(edge: .bottom) {
-                    Color.clear.frame(height: 100)
+                    
                 }
           
             }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
             .background(Color("Background"))
-            .colorScheme(.light)
-            .ignoresSafeArea(edges: .bottom)
             .navigationTitle(Text(Self.monthYearFormatter.string(from: currentMonthDate)))
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
+                ToolbarItem(placement: .topBarLeading) {
                     EditButton()
                         .foregroundColor(.black)
                         .tint(.black)
                 }
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         isAddWorkoutPresented = true
                     } label: {

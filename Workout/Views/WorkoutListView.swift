@@ -136,7 +136,7 @@ struct WorkoutListView: View {
         .background(Color("Background"))
         .navigationTitle("Workouts")
         .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
+            ToolbarItem(placement: .topBarLeading) {
                 if !workoutTemplates.isEmpty {
                     EditButton()
                         .foregroundColor(.black)
@@ -144,7 +144,7 @@ struct WorkoutListView: View {
                 }
             }
             
-            ToolbarItem(placement: .navigationBarTrailing) {
+            ToolbarItem(placement: .topBarTrailing) {
                 Button {
                       showingWorkoutSelection = true
                   } label: {

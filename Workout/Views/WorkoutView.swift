@@ -20,7 +20,20 @@ struct WorkoutView: View {
     @State private var showingLapTime = false
     @State private var showingLapHistory = false
     
-    @State private var orderedExercises: [WorkoutExercise] = []
+    private var orderedExercises: Binding<[WorkoutExercise]>? {
+        guard let event = workoutEvent else { return nil }
+        return Binding(
+            get: { event.workoutExercises.sorted { $0.order < $1.order } },
+            set: { newValue in
+                // Update the original order
+                for (index, exercise) in newValue.enumerated() {
+                    exercise.order = index
+                }
+                event.workoutExercises = newValue
+                try? context.save()
+            }
+        )
+    }
     
     private var currentLapNumber: Int {
         timerManager.lapTimes.count + 1
@@ -29,15 +42,13 @@ struct WorkoutView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             if workoutEvent != nil {
-                if orderedExercises.isEmpty {
+                if let exercisesBinding = orderedExercises {
+                    exerciseList(exercisesBinding, context: context)
+                } else {
                     Text("No exercises added yet")
                         .foregroundColor(.gray)
                         .italic()
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal)
-                    Spacer()
-                } else {
-                    exerciseList($orderedExercises, context: context)
+                        .padding()
                 }
                 
             } else if workoutTemplate != nil {
@@ -48,11 +59,11 @@ struct WorkoutView: View {
                 Spacer()
             }
         }
-        .onAppear {
-            if let event = workoutEvent {
-                orderedExercises = event.workoutExercises.sorted { $0.order < $1.order }
-            }
-        }
+//        .onAppear {
+//            if let event = workoutEvent {
+//                orderedExercises = event.workoutExercises.sorted { $0.order < $1.order }
+//            }
+//        }
         .foregroundColor(.black)
         .background(Color("Background"))
         .navigationTitle(workoutEvent?.displayTitle ?? "Workout")
@@ -116,9 +127,13 @@ struct WorkoutView: View {
                 }
             }
         }
-        .navigationDestination(isPresented: $isEditing) {
+        .sheet(isPresented: $isEditing) {
             if let event = workoutEvent {
-                WorkoutSelectionView(fromEvent: event)
+                NavigationStack {
+                    WorkoutSelectionView(fromEvent: event)
+                        .navigationTitle("Edit Workout")
+                        .navigationBarTitleDisplayMode(.inline)
+                }
             }
         }
         .toolbar(.hidden, for: .tabBar)
@@ -277,8 +292,9 @@ private func deleteExercise(
 struct SetsInputSection: View {
     @Bindable var workoutExercise: WorkoutExercise
     @Environment(\.modelContext) private var context
+    @State private var showSetHistory = false
+    @State private var showTopOnly = false
 
-    // Keep sets sorted by order, but return bindings directly
     var sortedSets: [Binding<WorkoutSet>] {
         workoutExercise.sets.indices
             .sorted { workoutExercise.sets[$0].order < workoutExercise.sets[$1].order }
@@ -291,14 +307,111 @@ struct SetsInputSection: View {
                 Text("Sets")
                     .font(.headline)
                 Spacer()
+                
+                Button(action: {
+                      showSetHistory = true
+                  }) {
+                      Text("Set History")
+                  }
+                  .buttonStyle(.glass)
+                  .sheet(isPresented: $showSetHistory) {
+                      NavigationStack {
+                          List {
+                              SetHistoryView(
+                                 allSets: workoutExercise.exercise.allSetsWithAdjustedE1RM,
+                                 topSets: workoutExercise.exercise.topSetsByDate,
+                                 showTopOnly: $showTopOnly,
+                                 headerTitle: "\(workoutExercise.exercise.name) History"
+                             )
+                          }
+                          .listStyle(.plain)
+                      }
+                      .presentationDetents([.medium, .large])
+                      .presentationDragIndicator(.visible)
+                  }
+                
                 Button(action: addSet) {
-                    Image(systemName: "plus")
+                    Text("Add")
                 }
                 .buttonStyle(.glass)
             }
 
-            ForEach(sortedSets, id: \.id) { $set in
-                setRow(setBinding: $set)
+            if !workoutExercise.sets.isEmpty {
+                Grid(alignment: .leading) {
+                    GridRow {
+                        if workoutExercise.exercise.setType.relevantAttributes.contains(.weight) {
+                            Text("Weight").font(.subheadline)
+                        }
+                        if workoutExercise.exercise.setType.relevantAttributes.contains(.reps) {
+                            Text("Reps").font(.subheadline)
+                        }
+                        if workoutExercise.exercise.setType.relevantAttributes.contains(.rpe) {
+                            Text("RPE").font(.subheadline)
+                        }
+                        if workoutExercise.exercise.setType.relevantAttributes.contains(.duration) {
+                            Text("Duration").font(.subheadline)
+                        }
+                        if workoutExercise.exercise.setType.relevantAttributes.contains(.distance) {
+                            Text("Distance").font(.subheadline)
+                        }
+                        if workoutExercise.exercise.setType.relevantAttributes.contains(.resistance) {
+                            Text("Resistance").font(.subheadline)
+                        }
+                        if workoutExercise.exercise.setType.relevantAttributes.contains(.heartRate) {
+                            Text("HR").font(.subheadline)
+                        }
+                    }
+
+                    ForEach(sortedSets, id: \.id) { $set in
+                        GridRow {
+                            if set.type.relevantAttributes.contains(.weight) {
+                                TextField("Weight", value: $set.weight, format: .number)
+                                    .keyboardType(.decimalPad)
+                                    .textFieldStyle(.plain)
+                            }
+                            if set.type.relevantAttributes.contains(.reps) {
+                                TextField("Reps", value: $set.reps, format: .number)
+                                    .keyboardType(.numberPad)
+                                    .textFieldStyle(.plain)
+                            }
+                            if set.type.relevantAttributes.contains(.rpe) {
+                                TextField("RPE", value: $set.rpe, format: .number)
+                                    .keyboardType(.decimalPad)
+                                    .textFieldStyle(.plain)
+                                    .onSubmit {
+                                        set.rpe = min(max(set.rpe ?? 0, 0), 10)
+                                    }
+                            }
+                            if set.type.relevantAttributes.contains(.duration) {
+                                TextField("Duration", value: $set.duration, format: .number)
+                                    .keyboardType(.decimalPad)
+                                    .textFieldStyle(.plain)
+                            }
+                            if set.type.relevantAttributes.contains(.distance) {
+                                TextField("Distance", value: $set.distance, format: .number)
+                                    .keyboardType(.decimalPad)
+                                    .textFieldStyle(.plain)
+                            }
+                            if set.type.relevantAttributes.contains(.resistance) {
+                                TextField("Resistance", value: $set.resistance, format: .number)
+                                    .keyboardType(.decimalPad)
+                                    .textFieldStyle(.plain)
+                            }
+                            if set.type.relevantAttributes.contains(.heartRate) {
+                                TextField("HR", value: $set.heartRate, format: .number)
+                                    .keyboardType(.numberPad)
+                                    .textFieldStyle(.plain)
+                            }
+
+                            Button {
+                                deleteSet(set)
+                            } label: {
+                                Image(systemName: "trash")
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
             }
         }
     }
@@ -331,65 +444,6 @@ struct SetsInputSection: View {
         }
 
         try? context.save()
-    }
-
-
-    @ViewBuilder
-    private func setRow(setBinding: Binding<WorkoutSet>) -> some View {
-        let set = setBinding.wrappedValue
-
-        HStack {
-            if set.type.relevantAttributes.contains(.weight) {
-                TextField("Weight", value: setBinding.weight, format: .number)
-                    .keyboardType(.decimalPad)
-                    .textFieldStyle(.plain)
-            }
-
-            if set.type.relevantAttributes.contains(.reps) {
-                TextField("Reps", value: setBinding.reps, format: .number)
-                    .keyboardType(.numberPad)
-                    .textFieldStyle(.plain)
-            }
-
-            if set.type.relevantAttributes.contains(.rpe) {
-                TextField("RPE", value: setBinding.rpe, format: .number)
-                    .keyboardType(.decimalPad)
-                    .onSubmit {
-                        set.rpe = min(max(set.rpe ?? 0, 0), 10)
-                    }
-            }
-
-            if set.type.relevantAttributes.contains(.duration) {
-                TextField("Duration", value: setBinding.duration, format: .number)
-                    .keyboardType(.decimalPad)
-                    .textFieldStyle(.plain)
-            }
-
-            if set.type.relevantAttributes.contains(.distance) {
-                TextField("Distance", value: setBinding.distance, format: .number)
-                    .keyboardType(.decimalPad)
-                    .textFieldStyle(.plain)
-            }
-
-            if set.type.relevantAttributes.contains(.resistance) {
-                TextField("Resistance", value: setBinding.resistance, format: .number)
-                    .keyboardType(.decimalPad)
-                    .textFieldStyle(.plain)
-            }
-
-            if set.type.relevantAttributes.contains(.heartRate) {
-                TextField("HR", value: setBinding.heartRate, format: .number)
-                    .keyboardType(.numberPad)
-                    .textFieldStyle(.plain)
-            }
-
-            Button {
-                deleteSet(set)
-            } label: {
-                Image(systemName: "trash")
-            }
-            .buttonStyle(.plain)
-        }
     }
 }
 

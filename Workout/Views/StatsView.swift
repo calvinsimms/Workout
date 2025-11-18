@@ -117,7 +117,6 @@ struct ExerciseStatsSheet: View {
     @State private var customEndDate: Date = Date()
     @State private var selectedPoint: ChartPoint?
     @State private var workoutsToShowCount = 10
-
     
     var exercise: Exercise
     
@@ -270,68 +269,12 @@ struct ExerciseStatsSheet: View {
                     }
 
                     
-                    Section(header:
-                        HStack {
-                            Text("Set History")
-                                .font(.headline)
-                            Spacer()
-                            Button {
-                                showTopOnly.toggle()
-                            } label: {
-                                Text(showTopOnly ? "Show All" : "Top Sets Only")
-                                    .font(.caption)
-                                    .bold()
-                            }
-                            .buttonStyle(.glass)
-                        }
-                    ) {
-                        let setsToDisplay = showTopOnly
-                            ? Array(exercise.topSetsByDate)
-                                .sorted { $0.date > $1.date }
-                            : exercise.allSetsWithAdjustedE1RM.sorted {
-                                if Calendar.current.isDate($0.date, inSameDayAs: $1.date) {
-                                    return ($0.adjustedE1RM ?? 0) > ($1.adjustedE1RM ?? 0)
-                                } else {
-                                    return $0.date > $1.date
-                                }
-                            }
-
-                        ForEach(setsToDisplay) { set in
-                            HStack {
-                                Text(set.date.formatted(date: .abbreviated, time: .omitted))
-                                    .font(.caption)
-                                Spacer()
-                                if exercise.topSetsByDate.contains(set) {
-                                    Text("TOP")
-                                        .font(.caption2)
-                                        .bold()
-                                        .padding(.horizontal, 6)
-                                        .padding(.vertical, 2)
-                                        .background(.gray.opacity(0.15))
-                                        .foregroundColor(.black)
-                                        .clipShape(Capsule())
-                                }
-
-                                if let weight = set.weight {
-                                    Text("\(weight, format: .number) lbs")
-                                }
-
-                                if let reps = set.reps {
-                                    Text("x\(reps)")
-                                }
-
-                                if let rpe = set.rpe {
-                                    Text("RPE \(rpe, format: .number.precision(.fractionLength(1...1)))")
-                                }
-
-                                if let e1rm = set.adjustedE1RM {
-                                    Text("E1RM \(e1rm, format: .number.precision(.fractionLength(1)))")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
-                        }
-                    }
+                    SetHistoryView(
+                        allSets: exercise.allSetsWithAdjustedE1RM,
+                        topSets: exercise.topSetsByDate,
+                        showTopOnly: $showTopOnly,
+                        headerTitle: "Set History"
+                    )
 
             
                 }
@@ -343,6 +286,78 @@ struct ExerciseStatsSheet: View {
         }
     }
 }
+
+struct SetHistoryView: View {
+    let allSets: [WorkoutSet]
+    let topSets: [WorkoutSet]
+    @Binding var showTopOnly: Bool
+    let headerTitle: String?
+
+    var body: some View {
+        Section(header: header) {
+            let setsToDisplay = showTopOnly
+                ? topSets
+                : allSets
+
+            ForEach(setsToDisplay) { set in
+                HStack {
+                    Text(set.date.formatted(date: .abbreviated, time: .omitted))
+                        .font(.caption)
+                    Spacer()
+
+                    if topSets.contains(set) {
+                        Text("TOP")
+                            .font(.caption2)
+                            .bold()
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(.gray.opacity(0.15))
+                            .foregroundColor(.black)
+                            .clipShape(Capsule())
+                    }
+
+                    if let weight = set.weight {
+                        Text("\(weight, format: .number) lbs")
+                    }
+
+                    if let reps = set.reps {
+                        Text("x\(reps)")
+                    }
+
+                    if let rpe = set.rpe {
+                        Text("RPE \(rpe, format: .number.precision(.fractionLength(1...1)))")
+                    }
+
+                    if let e1rm = set.adjustedE1RM {
+                        Text("E1RM \(e1rm, format: .number.precision(.fractionLength(1)))")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .listRowBackground(Color.clear)
+
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var header: some View {
+        HStack {
+            Text(headerTitle ?? "Set History")
+                .font(.headline)
+            Spacer()
+            Button {
+                showTopOnly.toggle()
+            } label: {
+                Text(showTopOnly ? "Show All" : "Top Sets Only")
+                    .font(.caption)
+                    .bold()
+            }
+            .buttonStyle(.glass)
+        }
+    }
+}
+
 
 //
 // MARK: - E1RM Models
