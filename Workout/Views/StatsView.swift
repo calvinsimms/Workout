@@ -270,7 +270,7 @@ struct ExerciseStatsSheet: View {
 
                     
                     SetHistoryView(
-                        allSets: exercise.allSetsWithAdjustedE1RM,
+                        allSets: exercise.allSetsByDateDescending,
                         topSets: exercise.topSetsByDate,
                         showTopOnly: $showTopOnly,
                         headerTitle: "Set History"
@@ -386,22 +386,24 @@ extension WorkoutSet {
 extension Exercise {
 
     var allSetsWithAdjustedE1RM: [WorkoutSet] {
-        workoutExercises
-            .flatMap { $0.sets }
-            .filter { $0.adjustedE1RM != nil }
-    }
+           allSetsByDateDescending
+       }
+    
+    var allSetsByDateDescending: [WorkoutSet] {
+         workoutExercises
+             .flatMap { $0.sets }
+             .filter { $0.adjustedE1RM != nil }
+             .sorted { $0.date > $1.date }
+     }
 
     var topE1RMHistory: [E1RMPoint] {
-        let grouped = Dictionary(grouping: allSetsWithAdjustedE1RM) {
-            Calendar.current.startOfDay(for: $0.date)
-        }
-
-        return grouped.compactMap { (_, sets) -> E1RMPoint? in
-            guard let best = sets.max(by: { ($0.adjustedE1RM ?? 0) < ($1.adjustedE1RM ?? 0) }) else { return nil }
-            return E1RMPoint(date: best.date, e1rm: best.adjustedE1RM!)
-        }
-        .sorted { $0.date < $1.date }
-    }
+           let grouped = Dictionary(grouping: allSetsWithAdjustedE1RM) { Calendar.current.startOfDay(for: $0.date) }
+           return grouped.compactMap { (_, sets) in
+               guard let best = sets.max(by: { ($0.adjustedE1RM ?? 0) < ($1.adjustedE1RM ?? 0) }) else { return nil }
+               return E1RMPoint(date: best.date, e1rm: best.adjustedE1RM!)
+           }
+           .sorted { $0.date < $1.date }
+       }
 
     var setsSortedByDayAndE1RM: [(day: Date, sets: [WorkoutSet])] {
         let grouped = Dictionary(grouping: allSetsWithAdjustedE1RM) {
@@ -419,15 +421,12 @@ extension Exercise {
     }
 
     var topSetsByDate: [WorkoutSet] {
-        let grouped = Dictionary(grouping: allSetsWithAdjustedE1RM) {
-            Calendar.current.startOfDay(for: $0.date)
-        }
-
-        return grouped.compactMap { (_, sets) in
-            sets.max(by: { ($0.adjustedE1RM ?? 0) < ($1.adjustedE1RM ?? 0) })
-        }
-        .sorted { $0.date > $1.date }
-    }
+          let grouped = Dictionary(grouping: allSetsWithAdjustedE1RM) { Calendar.current.startOfDay(for: $0.date) }
+          return grouped.compactMap { (_, sets) in
+              sets.max(by: { ($0.adjustedE1RM ?? 0) < ($1.adjustedE1RM ?? 0) })
+          }
+          .sorted { $0.date > $1.date }
+      }
 
     var volumeHistory: [ChartPoint] {
         let grouped = Dictionary(grouping: allSetsWithAdjustedE1RM) {
