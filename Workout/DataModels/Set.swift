@@ -68,58 +68,32 @@ extension SetType {
 @Model
 final class WorkoutSet: Identifiable {
     
-    // MARK: - Properties
-    
-    /// A unique identifier for each set, automatically assigned upon creation.
     @Attribute(.unique) var id: UUID
-    
-    /// The category of this set (e.g., weightlifting, cardio, or bodyweight).
-    /// Uses the `SetType` enum for structured typing.
     var type: SetType
-    
-    /// The date and time when this set was performed.
-    /// Defaults to the current date when a new set is created.
     var date: Date
-    
-    /// The weight used for the set, if applicable (e.g., 135 lbs for squats).
-    /// `nil` for cardio or bodyweight exercises that do not involve external load.
-    var weight: Double?
 
-    /// The amount of repititions performed
+    // Actual values
+    var weight: Double?
     var reps: Int?
-    
-    /// The perceived exertion for the set, often rated on a 1–10 RPE scale.
-    /// Allows tracking of workout intensity.
     var rpe: Double?
-    
-    /// The duration of the set (in seconds, minutes, or a custom unit).
-    /// Useful for cardio activities like running or cycling.
     var duration: Double?
-    
-    /// The distance covered during the set (e.g., kilometers or miles).
-    /// Typically used for cardio sets (e.g., a 5 km run).
     var distance: Double?
-    
-    /// The level of resistance for cardio involving machines, such as stationary bikes
     var resistance: Double?
-    
-    /// User inputs avergae heart rate for the exercise for statistical tracking
     var heartRate: Int?
+
+    // Target values (optional, new)
+    var targetWeight: Double?
+    var targetReps: Int?
+    var targetRPE: Double?
+    var targetDuration: Double?
+    var targetDistance: Double?
+    var targetResistance: Double?
+    var targetHeartRate: Int?
 
     var order: Int
 
     @Relationship(inverse: \WorkoutExercise.sets) var workoutExercise: WorkoutExercise?
-    
-    // MARK: - Initializer
-    /// Initializes a new `WorkoutSet` with the provided details.
-    /// - Parameters:
-    ///   - type: The type of set (`SetType` enum).
-    ///   - date: The date performed (defaults to now).
-    ///   - weight: The weight lifted (optional).
-    ///   - reps: The number of repetitions (optional).
-    ///   - rpe: The rate of perceived exertion (optional).
-    ///   - duration: The duration of the exercise (optional).
-    ///   - distance: The distance covered (optional).
+
     init(
         type: SetType,
         date: Date = Date(),
@@ -130,8 +104,7 @@ final class WorkoutSet: Identifiable {
         distance: Double? = nil,
         resistance: Double? = nil,
         heartRate: Int? = nil,
-        order: Int = 0,
-
+        order: Int = 0
     ) {
         self.id = UUID()
         self.type = type
@@ -144,5 +117,25 @@ final class WorkoutSet: Identifiable {
         self.resistance = resistance
         self.heartRate = heartRate
         self.order = order
+
+        // Target values start nil
+        self.targetWeight = nil
+        self.targetReps = nil
+        self.targetRPE = nil
+        self.targetDuration = nil
+        self.targetDistance = nil
+        self.targetResistance = nil
+        self.targetHeartRate = nil
     }
+
+//    // Convenience function to copy target → actual
+//    func applyTargetToActual() {
+//        if let t = targetWeight { weight = t }
+//        if let t = targetReps { reps = t }
+//        if let t = targetRPE { rpe = t }
+//        if let t = targetDuration { duration = t }
+//        if let t = targetDistance { distance = t }
+//        if let t = targetResistance { resistance = t }
+//        if let t = targetHeartRate { heartRate = t }
+//    }
 }

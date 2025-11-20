@@ -44,9 +44,9 @@ struct WorkoutListView: View {
             
             List {
                 Section(header: Text("Today's Workouts")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .foregroundColor(.black)
+//                    .font(.title2)
+//                    .fontWeight(.bold)
+//                    .foregroundColor(.black)
                 ) {
                     if todaysEvents.isEmpty {
                         Text("No workouts planned today")
@@ -78,9 +78,9 @@ struct WorkoutListView: View {
 
                 
                 Section(header: Text("Saved Workouts")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .foregroundColor(.black)
+//                    .font(.title2)
+//                    .fontWeight(.bold)
+//                    .foregroundColor(.black)
                 ) {
 
                     Picker("Category", selection: $selectedCategory) {

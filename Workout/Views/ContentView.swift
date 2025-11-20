@@ -62,13 +62,13 @@ struct ContentView: View {
             .tag(Tab.statistics)
             
             // MARK: - Coaching
-            NavigationStack {
-                CoachingView()
-            }
-            .tabItem {
-                Label("Coaching", systemImage: "list.clipboard")
-            }
-            .tag(Tab.coaching)
+//            NavigationStack {
+//                CoachingView()
+//            }
+//            .tabItem {
+//                Label("Coaching", systemImage: "list.clipboard")
+//            }
+//            .tag(Tab.coaching)
             
             
             // MARK: - Settings

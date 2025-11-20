@@ -23,15 +23,11 @@ struct WorkoutSelectionView: View {
     @State private var selectedExercises: Set<Exercise> = []
     @State private var selectedCategory: WorkoutCategory = .resistance
     @State private var exerciseOrder: [UUID] = []
-    @State private var tempTargetNotes: [UUID: String] = [:]
     @State private var tempNotes: [UUID: String] = [:]
     private var editingEvent: WorkoutEvent?
     
     @State private var selectedType = "New"
     let newOrSaved = ["New", "Saved"]
-    
-    @State private var targetType = "Simple"
-    let simpleOrAdvanced = ["Simple", "Advanced"]
     
     init(defaultDate: Date, sampleExercises: [Exercise]? = nil) {
         _date = State(initialValue: defaultDate)
@@ -58,12 +54,6 @@ struct WorkoutSelectionView: View {
         if let firstCategory = exercises.first?.category {
             _selectedCategory = State(initialValue: firstCategory)
         }
-
-        var targetNotesDict: [UUID: String] = [:]
-        for we in event.workoutExercises {
-            targetNotesDict[we.exercise.id] = we.targetNote ?? ""
-        }
-        _tempTargetNotes = State(initialValue: targetNotesDict)
 
         var notesDict: [UUID: String] = [:]
         for we in event.workoutExercises {
@@ -124,21 +114,6 @@ struct WorkoutSelectionView: View {
                         ForEach(exerciseOrder, id: \.self) { exerciseID in
                             if let exercise = selectedExercises.first(where: { $0.id == exerciseID }) {
                                 DisclosureGroup {
-                                    // Content inside disclosure – not bold
-                                    Picker("Select target type", selection: $targetType) {
-                                        ForEach(simpleOrAdvanced, id: \.self) { type in
-                                            Text(type)
-                                        }
-                                    }
-                                    .pickerStyle(.segmented)
-                                    .listRowBackground(Color("Background"))
-                                    
-                                    if targetType == "Simple" {
-                                        TextField("Target... '100 x 10 for 3 sets'", text: Binding(
-                                            get: { tempTargetNotes[exercise.id] ?? "" },
-                                            set: { tempTargetNotes[exercise.id] = $0 }
-                                        ))
-                                    }
                                     
                                     TextField("Notes... 'focus on form'", text: Binding(
                                             get: { tempNotes[exercise.id] ?? "" },
@@ -158,7 +133,6 @@ struct WorkoutSelectionView: View {
                         .onDelete(perform: deleteExercise)
                     }
 
-                    
                     
                     HStack {
                         Button {
@@ -247,8 +221,6 @@ struct WorkoutSelectionView: View {
                 if !existing.contains(where: { $0.exercise.id == exerciseID }) {
                     let newLink = WorkoutExercise(
                         notes: tempNotes[exerciseID],
-                        targetNote: tempTargetNotes[exerciseID],
-                        targetMode: .simple,
                         order: index,
                         workoutEvent: event,
                         exercise: exercise
@@ -258,7 +230,6 @@ struct WorkoutSelectionView: View {
                     if let existingLink = event.workoutExercises.first(where: { $0.exercise.id == exerciseID }) {
                         existingLink.order = index
                         existingLink.notes = tempNotes[exerciseID]
-                        existingLink.targetNote = tempTargetNotes[exerciseID]
                     }
                 }
             }
@@ -279,8 +250,6 @@ struct WorkoutSelectionView: View {
             if let exercise = selectedExercises.first(where: { $0.id == exerciseID }) {
                 let link = WorkoutExercise(
                     notes: tempNotes[exerciseID],
-                    targetNote: tempTargetNotes[exerciseID],
-                    targetMode: .simple,
                     order: index,
                     workoutEvent: newEvent,
                     exercise: exercise

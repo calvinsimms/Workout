@@ -16,34 +16,72 @@ struct StatsView: View {
     @State private var selectedExercise: Exercise?
     @State private var showStatsSheet = false
     
+    let measurements = ["Chest", "Shoulders", "Arms", "Biceps", "Triceps", "Waist", "Hips", "Thighs", "Calves", "Forearms", "Neck"]
+    
+    let strengthFormulas = ["DOTS", "Good Lift Classic", "Good Lift Equipped", "Wilks"]
 
     var body: some View {
         NavigationStack {
             VStack {
                 List {
-                    Picker("Category", selection: $selectedCategory) {
-                        ForEach(WorkoutCategory.allCases) { category in
-                            Text(category.rawValue).tag(category)
+                    
+                    Section(header: Text("Overall")
+                    ) {
+                        
+                        DisclosureGroup("Body Composition") {
+                            Text("Body Fat Percentage")
+                            Text("Bodyweight")
+                            Text("Lean Muscle Mass")
                         }
-                    }
-                    .pickerStyle(.segmented)
-                    .listRowBackground(Color("Background"))
-
-                    if selectedCategory == .resistance {
-                        ForEach(SubCategory.allCases) { sub in
-                            DisclosureGroup(sub.rawValue) {
-                                ForEach(exercisesFor(subCategory: sub)) { exercise in
-                                    exerciseRow(exercise)
+                        
+                        DisclosureGroup("Bodybuilding") {
+                            DisclosureGroup("Measurements"){
+                                ForEach(measurements, id: \.self) { measurement in
+                                    Text(measurement)
                                 }
                             }
-                            .bold()
-                            .listRowBackground(Color("Background"))
                         }
-                    } else {
-                        ForEach(exercisesFor(category: selectedCategory)) { exercise in
-                            exerciseRow(exercise)
+                        
+                        DisclosureGroup("Powerlifting") {
+                            Text("Competition Total")
+                            
+                            DisclosureGroup("Strength Formulas"){
+                                ForEach(strengthFormulas, id: \.self) { strengthFormula in
+                                    Text(strengthFormula)
+                                }
+                            }
+                        }
+                                                
+                    }
+                    .bold()
+                    .listRowBackground(Color("Background"))
+                    
+                    Section(header: Text("By Exercise")
+                    ) {
+                        Picker("Category", selection: $selectedCategory) {
+                            ForEach(WorkoutCategory.allCases) { category in
+                                Text(category.rawValue).tag(category)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .listRowBackground(Color("Background"))
+                        
+                        if selectedCategory == .resistance {
+                            ForEach(SubCategory.allCases) { sub in
+                                DisclosureGroup(sub.rawValue) {
+                                    ForEach(exercisesFor(subCategory: sub)) { exercise in
+                                        exerciseRow(exercise)
+                                    }
+                                }
+                            }
+                        } else {
+                            ForEach(exercisesFor(category: selectedCategory)) { exercise in
+                                exerciseRow(exercise)
+                            }
                         }
                     }
+                    .bold()
+                    .listRowBackground(Color("Background"))
                 }
                 .listStyle(.plain)
             }
@@ -87,6 +125,7 @@ struct StatsView: View {
 enum StatType: String, CaseIterable, Identifiable {
     case e1rm = "E1RM"
     case volume = "Volume"
+    case reps = "Reps"
     case intensity = "Intensity"
     case rpe = "RPE"
     
@@ -210,7 +249,6 @@ struct ExerciseStatsSheet: View {
                                             .onChanged { value in
                                                 let location = value.location
                                                 if let date: Date = proxy.value(atX: location.x) {
-                                                    // find closest point
                                                     if let nearest = chartData.min(by: { abs($0.date.timeIntervalSince1970 - date.timeIntervalSince1970) < abs($1.date.timeIntervalSince1970 - date.timeIntervalSince1970) }) {
                                                         selectedPoint = nearest
                                                     }
@@ -371,16 +409,18 @@ struct E1RMPoint: Identifiable {
 
 extension WorkoutSet {
     var adjustedE1RM: Double? {
-        guard let weight = weight,
-              let reps = reps,
-              reps > 0 else { return nil }
-        
-        let rpeValue = rpe ?? 10
-        
-        let repsAtRPE10 = Double(reps) + (10 - rpeValue)
-        
-        return weight * (36.0 / (37.0 - repsAtRPE10))
-    }
+           guard let weight = weight,
+                 let reps = reps,
+                 reps > 0 else { return nil }
+
+           let rpeValue = rpe ?? 10
+           let repsAtRPE10 = Double(reps) + (10 - rpeValue)
+
+           let denominator = 1.0278 - 0.0278 * repsAtRPE10
+           guard denominator > 0 else { return nil }
+
+           return weight / denominator
+       }
 }
 
 extension Exercise {
@@ -395,6 +435,18 @@ extension Exercise {
              .filter { $0.adjustedE1RM != nil }
              .sorted { $0.date > $1.date }
      }
+    
+    var totalRepsHistory: [ChartPoint] {
+          let groupedByDay = Dictionary(grouping: allSetsWithAdjustedE1RM) {
+              Calendar.current.startOfDay(for: $0.date)
+          }
+
+          return groupedByDay.compactMap { day, sets in
+              let totalReps = sets.reduce(0) { $0 + ($1.reps ?? 0) }
+              return ChartPoint(date: day, value: Double(totalReps))
+          }
+          .sorted { $0.date < $1.date }
+      }
 
     var topE1RMHistory: [E1RMPoint] {
            let grouped = Dictionary(grouping: allSetsWithAdjustedE1RM) { Calendar.current.startOfDay(for: $0.date) }
@@ -482,6 +534,7 @@ extension Exercise {
         case .e1rm:
             data = topE1RMHistory.map { ChartPoint(date: $0.date, value: $0.e1rm) }
         case .volume: data = volumeHistory
+        case .reps: data = totalRepsHistory  
         case .intensity: data = averageIntensity
         case .rpe: data = averageRPE
         }
