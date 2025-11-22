@@ -10,7 +10,7 @@ import SwiftData
 import Combine
 
 enum SetCategory: String, CaseIterable, Identifiable {
-    case targetSet = "Target"
+    case targetSet = "Targets"
     case actualSet = "Actual"
     
     var id: String { rawValue }
@@ -27,10 +27,9 @@ struct WorkoutView: View {
     @StateObject private var timerManager = TimerManager()
     @State private var showingLapTime = false
     @State private var showingLapHistory = false
-    @State private var selectedSetCategory: SetCategory = .actualSet
     @State private var selectedExercise: Exercise?
-
-
+    @State private var setCategoryForExercise: [UUID: SetCategory] = [:]
+    @State private var showingSetsInfo = false
     
     private var orderedExercises: Binding<[WorkoutExercise]>? {
         guard let event = workoutEvent else { return nil }
@@ -69,31 +68,82 @@ struct WorkoutView: View {
                                             selectedExercise = workoutExercise.exercise
                                             }
                                            .buttonStyle(.glass)
+                                           .font(.subheadline)
+                                        
+                                        Spacer()
+                                        
+                                        HStack(spacing: 4) {
+                                            Text("Sets")
+                                                .bold()
+
+                                            Button(action: { showingSetsInfo = true }) {
+                                                Image(systemName: "info.circle")
+                                                    .font(.subheadline)
+                                            }
+                                            .buttonStyle(.plain)
+                                        }
+                                        .alert("Sets Information", isPresented: $showingSetsInfo) {
+                                            Button("Got it!", role: .cancel) {}
+                                        } message: {
+                                            Text("""
+                                        
+                                        Target Sets: Your planned goal for this workout.
+                                        Actual Sets: The sets you actually performed. Only these are tracked in statistics.
+                                        
+                                        "Track" Column: Sets marked with the checkmark are included in statistics. For accurate data, it’s best to track only sets with an RPE of 6+, since low-effort/warmup sets can skew your results.
+
+                                        E1RM: Highest estimated one-rep max from performed sets.
+                                        Volume: Total weight lifted (weight × reps) for all sets.
+                                        Reps: Sum of reps performed across all sets.
+                                        Intensity: Average load relative to your max (weight / E1RM × 100).
+                                        RPE: Average Rate of Perceived Exertion. Reflects how hard each set felt (1–10 scale).
+                                        
+                                        Notes: Optional field for extra observations.
+                                        
+                                        """)
+                                        }
                                         
                                         Spacer()
                                         
                                         Button("Add Set") {
-                                            workoutExercise.addSet()
+                                            withAnimation(.none) {
+                                                workoutExercise.addSet()
+                                            }
                                         }
                                         .buttonStyle(.glass)
+                                        .font(.subheadline)
 
                                     }
-                                    .padding(.bottom, 10)
-                                                                        
-                                    Picker("Category", selection: $selectedSetCategory) {
+                                    
+                                    Picker("Category",
+                                           selection: Binding(
+                                                get: { setCategoryForExercise[workoutExercise.id] ?? .actualSet },
+                                                set: { newValue in
+                                                    setCategoryForExercise[workoutExercise.id] = newValue
+                                                }
+                                           )
+                                    ) {
                                         ForEach(SetCategory.allCases) { category in
                                             Text(category.rawValue).tag(category)
                                         }
                                     }
                                     .pickerStyle(.segmented)
-                                    .padding(.bottom, 10)
                                     
 
-                                    if selectedSetCategory == .targetSet {
-                                        SetsInputSection(workoutExercise: workoutExercise, focusedField: $focusedField, isTargetCategory: true)
-                    
+                                    let selectedCategory = setCategoryForExercise[workoutExercise.id] ?? .actualSet
+
+                                    if selectedCategory == .targetSet {
+                                        SetsInputSection(
+                                            workoutExercise: workoutExercise,
+                                            focusedField: $focusedField,
+                                            isTargetCategory: true
+                                        )
                                     } else {
-                                        SetsInputSection(workoutExercise: workoutExercise, focusedField: $focusedField, isTargetCategory: false)
+                                        SetsInputSection(
+                                            workoutExercise: workoutExercise,
+                                            focusedField: $focusedField,
+                                            isTargetCategory: false
+                                        )
                                     }
                                     
                                     
@@ -106,70 +156,91 @@ struct WorkoutView: View {
                                         let totalReps = sets.reduce(0) { $0 + ($1.reps ?? 0) }
 
                                         let rpes = sets.compactMap { $0.rpe }
-                                        let weights = sets.compactMap { $0.weight }
 
                                         let avgRPE = rpes.isEmpty ? nil : (rpes.reduce(0, +) / Double(rpes.count))
 
                                         let avgIntensity: Double = {
-                                            guard let maxE1RM = sets.compactMap({ $0.adjustedE1RM }).max(),
-                                                  !weights.isEmpty else { return 0 }
-                                            let avgWeight = weights.reduce(0, +) / Double(weights.count)
+                                            let validSets = sets.filter {
+                                                $0.weight != nil &&
+                                                $0.adjustedE1RM != nil
+                                            }
+                                            
+                                            guard !validSets.isEmpty else { return 0 }
+                                            
+                                            let maxE1RM = validSets.compactMap { $0.adjustedE1RM }.max() ?? 0
+                                            guard maxE1RM > 0 else { return 0 }
+                                            
+                                            let avgWeight = validSets.compactMap { $0.weight! }.reduce(0, +) / Double(validSets.count)
+                                            
                                             return (avgWeight / maxE1RM) * 100
                                         }()
 
-                                        let columns = Array(repeating: GridItem(.flexible(), spacing: 12), count: 5)
+                                        HStack {
 
-                                        LazyVGrid(columns: columns, alignment: .leading) {
-
-                                            VStack(alignment: .leading) {
-                                                Text("E1RM").font(.caption2).foregroundColor(.gray)
+                                            VStack(alignment: .leading, spacing: 5) {
+                                                Text("E1RM").font(.caption2).foregroundColor(.gray.opacity(0.6))
                                                 Text("\(highestE1RM, specifier: "%.1f")")
                                                     .font(.subheadline).bold()
                                             }
+                                            
+                                            Spacer()
 
-                                            VStack(alignment: .leading) {
-                                                Text("Volume").font(.caption2).foregroundColor(.gray)
+                                            VStack(alignment: .leading, spacing: 5) {
+                                                Text("Volume").font(.caption2).foregroundColor(.gray.opacity(0.6))
                                                 Text("\(totalVolume, specifier: "%.0f")")
                                                     .font(.subheadline).bold()
                                             }
+                                            
+                                            Spacer()
 
-                                            VStack(alignment: .leading) {
-                                                Text("Reps").font(.caption2).foregroundColor(.gray)
+                                            VStack(alignment: .leading, spacing: 5) {
+                                                Text("Reps").font(.caption2).foregroundColor(.gray.opacity(0.6))
                                                 Text("\(totalReps)")
                                                     .font(.subheadline).bold()
                                             }
+                                            
+                                            Spacer()
 
-                                            VStack(alignment: .leading) {
-                                                Text("Intensity").font(.caption2).foregroundColor(.gray)
+                                            VStack(alignment: .leading, spacing: 5) {
+                                                Text("Intensity").font(.caption2).foregroundColor(.gray.opacity(0.6))
                                                 Text("\(avgIntensity, specifier: "%.1f")")
                                                     .font(.subheadline).bold()
                                             }
+                                            
+                                            Spacer()
 
-                                            VStack(alignment: .leading) {
-                                                Text("RPE").font(.caption2).foregroundColor(.gray)
+                                            VStack(alignment: .leading, spacing: 5) {
+                                                Text("RPE").font(.caption2).foregroundColor(.gray.opacity(0.6))
                                                 Text(avgRPE == nil ? "-" : "\(avgRPE!, specifier: "%.1f")")
                                                     .font(.subheadline).bold()
                                             }
                                         }
                                     }
-                                    .padding(8)
+                                    .padding(.vertical, 10)
+                                    .padding(.horizontal, 16)
                                     .background(Color.gray.opacity(0.1))
-                                    .cornerRadius(8)
-                                    .padding(.bottom, 5)
+                                    .cornerRadius(16)
 
-                                    Text("Notes")
-                                        .font(.headline)
+                                    VStack(alignment: .leading, spacing: 5) {
+                                        Text("Notes")
+                                            .font(.subheadline).bold()
 
-                                    TextField(
-                                        "Notes",
-                                        text: Binding(
-                                            get: { workoutExercise.notes ?? "" },
-                                            set: { workoutExercise.notes = $0 }
+
+                                        TextField(
+                                            "Notes",
+                                            text: Binding(
+                                                get: { workoutExercise.notes ?? "" },
+                                                set: { workoutExercise.notes = $0 }
+                                            )
                                         )
-                                    )
-                                    .textFieldStyle(.plain)
-                                    .font(.subheadline)
-                                    .focused($focusedField, equals: workoutExercise.id)
+                                        .textFieldStyle(.plain)
+                                        .font(.subheadline)
+                                        .focused($focusedField, equals: workoutExercise.id)
+                                    }
+                                    .padding(.vertical, 10)
+                                    .padding(.horizontal, 16)
+                                    .background(Color.gray.opacity(0.1))
+                                    .cornerRadius(16)
                                 }
                             } label: {
                                 HStack {
@@ -215,7 +286,8 @@ struct WorkoutView: View {
                             try? context.save()
                         }
                     }
-                    .listStyle(.plain)
+                    .listStyle(GroupedListStyle())
+                    .scrollContentBackground(.hidden)
                     .tint(.black)
                     .safeAreaInset(edge: .bottom) {
                         Color.clear.frame(height: 60)
@@ -330,6 +402,8 @@ struct SetsInputSection: View {
     @Bindable var workoutExercise: WorkoutExercise
     @Environment(\.modelContext) private var context
     @State private var showSetHistory = false
+    @State private var setPendingDelete: WorkoutSet?
+    @State private var showRPEInfo = false
     @FocusState.Binding var focusedField: UUID?
 
     // Pass in which category we're showing
@@ -343,49 +417,88 @@ struct SetsInputSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            if !sortedSets.isEmpty {
+            
+            if workoutExercise.sets.isEmpty {
+                     // Show empty state instead of grid
+                     HStack {
+                         Text("No sets yet - tap “Add Set” to begin.")
+                             .foregroundColor(.gray.opacity(0.6))
+                             .italic()
+                             .font(.caption)
+                         Spacer()
+                     }
+                     .frame(maxWidth: .infinity)
+//                     .padding(16)
+//                     .background(Color.gray.opacity(0.1))
+//                     .cornerRadius(16)
+                
+            } else {
                 Grid(alignment: .leading) {
-                    // Header
+                    // Headers
                     GridRow {
-                        if workoutExercise.exercise.setType.relevantAttributes.contains(.weight) { Text("Weight").font(.headline) }
-                        if workoutExercise.exercise.setType.relevantAttributes.contains(.reps) { Text("Reps").font(.headline) }
-                        if workoutExercise.exercise.setType.relevantAttributes.contains(.rpe) { Text("RPE").font(.headline) }
-                        if workoutExercise.exercise.setType.relevantAttributes.contains(.duration) { Text("Duration").font(.headline) }
-                        if workoutExercise.exercise.setType.relevantAttributes.contains(.distance) { Text("Distance").font(.headline) }
-                        if workoutExercise.exercise.setType.relevantAttributes.contains(.resistance) { Text("Resistance").font(.headline) }
-                        if workoutExercise.exercise.setType.relevantAttributes.contains(.heartRate) { Text("HR").font(.headline) }
+                        Text("Track").font(.subheadline).bold()
+                        
+                        if workoutExercise.exercise.setType.relevantAttributes.contains(.weight) { Text("Weight")                                              .font(.subheadline).bold() }
+                        if workoutExercise.exercise.setType.relevantAttributes.contains(.reps) { Text("Reps")                                                    .font(.subheadline).bold() }
+                        if workoutExercise.exercise.setType.relevantAttributes.contains(.rpe) {
+                            HStack(spacing: 4) {
+                                Text("RPE").font(.subheadline).bold()
+                                Button(action: {
+                                    showRPEInfo = true
+                                }) {
+                                    Image(systemName: "info.circle")
+                                        .font(.subheadline)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        if workoutExercise.exercise.setType.relevantAttributes.contains(.duration) { Text("Duration")                                                    .font(.subheadline).bold() }
+                        if workoutExercise.exercise.setType.relevantAttributes.contains(.distance) { Text("Distance")                                                    .font(.subheadline).bold() }
+//                        if workoutExercise.exercise.setType.relevantAttributes.contains(.resistance) { Text("Resistance")                                                    .font(.subheadline).bold() }
+                        if workoutExercise.exercise.setType.relevantAttributes.contains(.heartRate) { Text("Heart Rate")                                                    .font(.subheadline).bold() }
                     }
-
+                    
                     // Set rows
                     ForEach(sortedSets, id: \.id) { $set in
                         GridRow {
+                            
+                            Button(action: {
+                                // Toggle tracked state
+                                set.isTracked.toggle()
+                                try? context.save()
+                            }) {
+                                Image(systemName: set.isTracked ? "checkmark.circle.fill" : "circle")
+                                    .foregroundColor(set.isTracked ? .black : .gray.opacity(0.6))
+                                    .font(.subheadline)
+                            }
+                            .buttonStyle(.plain)
+                            
+                            
                             if set.type.relevantAttributes.contains(.weight) {
                                 TextField(
-                                    "Weight",
+                                    "lbs",
                                     value: isTargetCategory
-                                        ? Binding(projectedValue: $set.targetWeight)
-                                        : Binding(projectedValue: $set.weight),
+                                    ? Binding(projectedValue: $set.targetWeight)
+                                    : Binding(projectedValue: $set.weight),
                                     format: .number
                                 )
                                 .keyboardType(.decimalPad)
-                                .textFieldStyle(.plain)
                                 .focused($focusedField, equals: set.id)
                             }
                             if set.type.relevantAttributes.contains(.reps) {
                                 TextField(
-                                    "Reps",
+                                    "0",
                                     value: isTargetCategory
-                                        ? Binding(projectedValue: $set.targetReps)
-                                        : Binding(projectedValue: $set.reps),
+                                    ? Binding(projectedValue: $set.targetReps)
+                                    : Binding(projectedValue: $set.reps),
                                     format: .number
                                 )
                                 .keyboardType(.numberPad)
-                                .textFieldStyle(.plain)
                                 .focused($focusedField, equals: set.id)
                             }
                             if set.type.relevantAttributes.contains(.rpe) {
                                 TextField(
-                                    "RPE",
+                                    "1 - 10",
                                     value: Binding(
                                         get: { isTargetCategory ? set.targetRPE : set.rpe },
                                         set: { newValue in
@@ -401,61 +514,56 @@ struct SetsInputSection: View {
                                     format: .number
                                 )
                                 .keyboardType(.decimalPad)
-                                .textFieldStyle(.plain)
                                 .focused($focusedField, equals: set.id)
                             }
                             if set.type.relevantAttributes.contains(.duration) {
                                 TextField(
-                                    "Duration",
+                                    "00:00:00",
                                     value: isTargetCategory
-                                        ? Binding(projectedValue: $set.targetDuration)
-                                        : Binding(projectedValue: $set.duration),
+                                    ? Binding(projectedValue: $set.targetDuration)
+                                    : Binding(projectedValue: $set.duration),
                                     format: .number
                                 )
                                 .keyboardType(.decimalPad)
-                                .textFieldStyle(.plain)
                                 .focused($focusedField, equals: set.id)
                             }
                             if set.type.relevantAttributes.contains(.distance) {
                                 TextField(
-                                    "Distance",
+                                    "kms",
                                     value: isTargetCategory
-                                        ? Binding(projectedValue: $set.targetDistance)
-                                        : Binding(projectedValue: $set.distance),
+                                    ? Binding(projectedValue: $set.targetDistance)
+                                    : Binding(projectedValue: $set.distance),
                                     format: .number
                                 )
                                 .keyboardType(.decimalPad)
-                                .textFieldStyle(.plain)
                                 .focused($focusedField, equals: set.id)
                             }
-                            if set.type.relevantAttributes.contains(.resistance) {
-                                TextField(
-                                    "Resistance",
-                                    value: isTargetCategory
-                                        ? Binding(projectedValue: $set.targetResistance)
-                                        : Binding(projectedValue: $set.resistance),
-                                    format: .number
-                                )
-                                .keyboardType(.decimalPad)
-                                .textFieldStyle(.plain)
-                                .focused($focusedField, equals: set.id)
-                            }
+//                                if set.type.relevantAttributes.contains(.resistance) {
+//                                    TextField(
+//                                        "Resistance",
+//                                        value: isTargetCategory
+//                                        ? Binding(projectedValue: $set.targetResistance)
+//                                        : Binding(projectedValue: $set.resistance),
+//                                        format: .number
+//                                    )
+//                                    .keyboardType(.decimalPad)
+//                                    .textFieldStyle(.plain)
+//                                    .focused($focusedField, equals: set.id)
+//                                }
                             if set.type.relevantAttributes.contains(.heartRate) {
                                 TextField(
-                                    "HR",
+                                    "BPM",
                                     value: isTargetCategory
-                                        ? Binding(projectedValue: $set.targetHeartRate)
-                                        : Binding(projectedValue: $set.heartRate),
+                                    ? Binding(projectedValue: $set.targetHeartRate)
+                                    : Binding(projectedValue: $set.heartRate),
                                     format: .number
                                 )
                                 .keyboardType(.numberPad)
-                                .textFieldStyle(.plain)
                                 .focused($focusedField, equals: set.id)
                             }
-
+                            
                             Button {
                                 if isTargetCategory {
-                                    // Apply target values to actual
                                     set.weight = set.targetWeight
                                     set.reps = set.targetReps
                                     set.rpe = set.targetRPE
@@ -463,48 +571,77 @@ struct SetsInputSection: View {
                                     set.distance = set.targetDistance
                                     set.resistance = set.targetResistance
                                     set.heartRate = set.targetHeartRate
-
+                                    
                                     try? context.save()
                                 } else {
-                                    deleteSet(set)
+                                    setPendingDelete = set
                                 }
                             } label: {
                                 if isTargetCategory {
                                     let isSynced = (set.weight == set.targetWeight) &&
-                                                   (set.reps == set.targetReps) &&
-                                                   (set.rpe == set.targetRPE) &&
-                                                   (set.duration == set.targetDuration) &&
-                                                   (set.distance == set.targetDistance) &&
-                                                   (set.resistance == set.targetResistance) &&
-                                                   (set.heartRate == set.targetHeartRate)
+                                    (set.reps == set.targetReps) &&
+                                    (set.rpe == set.targetRPE) &&
+                                    (set.duration == set.targetDuration) &&
+                                    (set.distance == set.targetDistance) &&
+                                    (set.resistance == set.targetResistance) &&
+                                    (set.heartRate == set.targetHeartRate)
                                     
-                                    Image(systemName: isSynced ? "doc.on.doc.fill" : "doc.on.doc")
+                                    Image(systemName: isSynced ? "arrow.right.circle.fill" : "arrow.right.circle")
+                                    
                                 } else {
                                     Image(systemName: "trash")
                                 }
                             }
+                            .frame(height: 10)
                             .buttonStyle(.plain)
-
-
                         }
-                        .padding(.vertical, 5)
                     }
+                }
+                .alert("RPE Info", isPresented: $showRPEInfo) {
+                    Button("Got it!", role: .cancel) { }
+                } message: {
+                    Text("""
+                        
+                        RPE (Rate of Perceived Exertion) is a scale from 1 to 10 used to measure the difficulty of a set in resistance training.
+
+                        1: Could do 20+ reps  
+                        2: Could do many more reps  
+                        3: Could do 10+ more reps  
+                        4: Could do 8–10 more reps  
+                        5: 5–7 reps left in the tank  
+                        6: 3–4 reps remaining  
+                        7: 2–3 reps remaining  
+                        8: 1–2 reps left  
+                        9: Could maybe squeeze out 1 more rep or use more weight 
+                        10: Cannot perform another rep or use more weight 
+
+                        Use this scale to self-regulate intensity, avoid overtraining or undertraining, and track progress over time.
+                        """)
                 }
             }
         }
+        .alert("Delete Set?", isPresented: Binding(
+            get: { setPendingDelete != nil },
+            set: { if !$0 { setPendingDelete = nil } }
+        )) {
+            Button("Delete", role: .destructive) {
+                if let setToDelete = setPendingDelete {
+                    deleteSet(setToDelete)
+                }
+                setPendingDelete = nil
+            }
+            Button("Cancel", role: .cancel) {
+                setPendingDelete = nil
+            }
+        } message: {
+            Text("Are you sure you want to delete this set?")
+        }
+        .padding(.vertical, 10)
+        .padding(.horizontal, 16)
+        .background(Color.gray.opacity(0.1))
+        .cornerRadius(16)
     }
-////    
-//    private func addSet() {
-//        let newOrder = workoutExercise.sets.count
-//        let eventDate = workoutExercise.workoutEvent?.date ?? Date()
-//
-//        let set = WorkoutSet(type: workoutExercise.exercise.setType, date: eventDate, order: newOrder)
-//        set.workoutExercise = workoutExercise
-//        workoutExercise.sets.append(set)
-//
-//        try? context.save()
-//    }
-//
+
     private func deleteSet(_ set: WorkoutSet) {
         context.delete(set)
         workoutExercise.sets.removeAll { $0.id == set.id }
@@ -610,60 +747,47 @@ struct LapHistorySheet: View {
     }
 }
 
-// MARK: - Preview
-
 #Preview {
-
-    let squat = Exercise(
-        name: "Barbell Squat",
-        category: .resistance,
-        subCategory: .legs
+    // Create a ModelContainer
+    let container = try! ModelContainer(
+        for: WorkoutTemplate.self,
+             Exercise.self,
+             WorkoutEvent.self,
+             WorkoutExercise.self,
+             WorkoutSet.self
     )
 
-    let bench = Exercise(
+    // Sample Exercise
+    let sampleExercise = Exercise(
         name: "Bench Press",
         category: .resistance,
         subCategory: .chest
     )
 
-    let event = WorkoutEvent(
+    // Sample WorkoutEvent
+    let workoutEvent = WorkoutEvent(date: .now, title: "Sample Workout")
+
+    // Sample WorkoutExercise
+    let workoutExercise = WorkoutExercise(
+        workoutEvent: workoutEvent,
+        exercise: sampleExercise
+    )
+
+    // Sample WorkoutSet
+    let sampleSet = WorkoutSet(
+        type: sampleExercise.setType,
         date: .now,
-        title: "Demo Workout"
+        weight: 135,
+        reps: 8,
+        rpe: 7,
+        order: 0
     )
 
-    // Sample WorkoutExercises
-    let squatExercise = WorkoutExercise(
-        notes: "Keep chest up",
-        order: 0,
-        workoutEvent: event,
-        exercise: squat
-    )
+    // Attach set and exercise
+    workoutExercise.sets = [sampleSet]
+    workoutEvent.workoutExercises = [workoutExercise]
 
-    squatExercise.sets = [
-        WorkoutSet(type: squat.setType, weight: 225, reps: 5, order: 0),
-        WorkoutSet(type: squat.setType, weight: 225, reps: 5, order: 1),
-        WorkoutSet(type: squat.setType, weight: 225, reps: 5, order: 2)
-    ]
-
-    let benchExercise = WorkoutExercise(
-        order: 1,
-        workoutEvent: event,
-        exercise: bench
-    )
-
-    benchExercise.sets = [
-        WorkoutSet(type: bench.setType, weight: 135, reps: 8, order: 0),
-        WorkoutSet(type: bench.setType, weight: 135, reps: 8, order: 1)
-    ]
-
-    event.workoutExercises = [squatExercise, benchExercise]
-
-    return WorkoutView(workoutEvent: event)
-        .modelContainer(for: [
-            Exercise.self,
-            WorkoutEvent.self,
-            WorkoutExercise.self,
-            WorkoutSet.self,
-            WorkoutTemplate.self
-        ])
+    // Return the view
+    return WorkoutView(workoutEvent: workoutEvent, workoutTemplate: nil)
+        .modelContainer(container)
 }

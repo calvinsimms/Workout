@@ -8,6 +8,15 @@
 import SwiftUI
 import SwiftData
 
+
+enum EventType: String, CaseIterable, Identifiable {
+    case newWorkout = "New Workout"
+    case savedWorkout = "Saved Workout"
+    case measurement = "Measurements"
+    
+    var id: String { rawValue }
+}
+
 struct WorkoutSelectionView: View {
     
     @Environment(\.dismiss) private var dismiss
@@ -17,21 +26,25 @@ struct WorkoutSelectionView: View {
     @Query(sort: [SortDescriptor(\WorkoutTemplate.title)]) private var workoutTemplates: [WorkoutTemplate]
     
     @State private var selectedWorkout: WorkoutTemplate?
-    @State private var date: Date
+    @Binding var date: Date
+    @State private var editableDate: Date?
     @State private var eventTitle: String = ""
     @State private var showingExerciseSheet = false
     @State private var selectedExercises: Set<Exercise> = []
     @State private var selectedCategory: WorkoutCategory = .resistance
     @State private var exerciseOrder: [UUID] = []
     @State private var tempNotes: [UUID: String] = [:]
+    @State private var selectedEventType: EventType = .newWorkout
+    @State private var selectedMeasurementType: MeasurementType = .weight
+    @State private var measurementValue: Double = 0
+    @State private var measurementValues: [MeasurementType: Double] = [:]
+    
     private var editingEvent: WorkoutEvent?
     
-    @State private var selectedType = "New"
-    let newOrSaved = ["New", "Saved"]
-    
-    init(defaultDate: Date, sampleExercises: [Exercise]? = nil) {
-        _date = State(initialValue: defaultDate)
-        
+    init(date: Binding<Date>, sampleExercises: [Exercise]? = nil) {
+        self.editingEvent = nil
+        _date = date
+
         if let sampleExercises {
             let set = Set(sampleExercises)
             _selectedExercises = State(initialValue: set)
@@ -42,7 +55,7 @@ struct WorkoutSelectionView: View {
     init(fromEvent event: WorkoutEvent) {
         editingEvent = event
 
-        _date = State(initialValue: event.date)
+        _date = Binding.constant(event.date) 
         _eventTitle = State(initialValue: event.title ?? "")
 
         let orderedExercises = event.workoutExercises.sorted(by: { $0.order < $1.order })
@@ -64,157 +77,191 @@ struct WorkoutSelectionView: View {
     
     var body: some View {
         
-        NavigationStack {
-            List {
-                
-                Picker("Select new or saved workout", selection: $selectedType) {
-                    ForEach(newOrSaved, id: \.self) { type in
-                        Text(type)
+        
+        
+        List {
+            
+           Section {
+                Picker("Event Type", selection: $selectedEventType) {
+                    ForEach(EventType.allCases) { type in
+                        Text(type.rawValue).tag(type)
                     }
                 }
                 .pickerStyle(.segmented)
-                .listRowBackground(Color("Background"))
-                
-                if selectedType == "Saved" {
-                    
-                    DatePicker("Date", selection: $date, displayedComponents: .date)
-                        .font(.headline)
-                    
-                    Section("Select Workout") {
-                        Picker("Select Workout", selection: $selectedWorkout) {
-                            ForEach(workoutTemplates) { workoutTemplate in
-                                Text(workoutTemplate.title).tag(Optional(workoutTemplate))
-                            }
-                        }
-                        .pickerStyle(.menu)
+
+            }
+            .listRowBackground(Color("Background"))
+            
+            if selectedEventType == .newWorkout {
+
+                Section {
+                    HStack {
+                        Text("Workout Title")
+                            .bold()
+                        Spacer()
+                        TextField("Enter Title", text: $eventTitle)
+//                            .bold()
+                            .multilineTextAlignment(.trailing)
                     }
-                    .font(.headline)
                     
-                } else {
-                    
-                    DatePicker("Date", selection: $date, displayedComponents: .date)
-                        .font(.headline)
-                        .listRowBackground(Color("Background"))
-                    
-                    TextField("Workout Title", text: $eventTitle)
-                        .textFieldStyle(.plain)
-                        .listRowBackground(Color("Background"))
+                    DatePicker(
+                        "Date",
+                        selection: Binding<Date>(
+                            get: { editableDate ?? date },
+                            set: { newValue in
+                                if editingEvent != nil {
+                                    editableDate = newValue
+                                } else {
+                                    date = newValue
+                                }
+                            }
+                        ),
+                        displayedComponents: .date
+                    )
+                    .bold()
                     
                     Picker("Category", selection: $selectedCategory) {
                         ForEach(WorkoutCategory.allCases) { category in
                             Text(category.rawValue).tag(category)
                         }
                     }
+                    .bold()
                     .pickerStyle(.segmented)
                     .disabled(!selectedExercises.isEmpty)
-                    .listRowBackground(Color("Background"))
-                                        
-             
-                    Section {
-                        ForEach(exerciseOrder, id: \.self) { exerciseID in
-                            if let exercise = selectedExercises.first(where: { $0.id == exerciseID }) {
-                                DisclosureGroup {
-                                    
-                                    TextField("Notes... 'focus on form'", text: Binding(
-                                            get: { tempNotes[exercise.id] ?? "" },
-                                            set: { tempNotes[exercise.id] = $0 }
-                                        )
-                                    )
-                                    .textFieldStyle(.plain)
-                                    
-                                } label: {
-                                    Text(exercise.name)
-                                        .bold()
-                                }
-                                .listRowBackground(Color("Background"))
-                            }
-                        }
-                        .onMove(perform: moveExercise)
-                        .onDelete(perform: deleteExercise)
-                    }
-
                     
-                    HStack {
-                        Button {
-                            showingExerciseSheet = true
+                    NavigationLink {
+                        ExerciseSelectionView(
+                            selectedExercises: $selectedExercises,
+                            workoutCategory: selectedCategory
+                        )
+                        .navigationTitle("Select Exercises")
+                    } label: {
+                        Text("Add Exercises")
+                            .bold()
+                        
+                    }
+                    
+                }
+                .listRowBackground(Color("Background"))
+                
+                ForEach(exerciseOrder, id: \.self) { exerciseID in
+                    if let exercise = selectedExercises.first(where: { $0.id == exerciseID }) {
+                        DisclosureGroup {
+                            
+                            TextField("Notes... ''100 for 3 sets of 10 reps''", text: Binding(
+                                get: { tempNotes[exercise.id] ?? "" },
+                                set: { tempNotes[exercise.id] = $0 }
+                            )
+                            )
+                            .textFieldStyle(.plain)
+                            
                         } label: {
-                            Text("Add Exercises")
+                            Text(exercise.name)
                                 .bold()
-                                .foregroundColor(.black)
+                            
                         }
-                        .buttonStyle(.glass)
+                        .listRowBackground(Color("Background"))
+                        
                     }
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .listRowBackground(Color("Background"))
-                    .listRowSeparator(.hidden)
-                    
                 }
-            }
-            .listStyle(.plain)
-            .background(Color("Background"))
-            .tint(.black)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
-                        saveWorkoutEvent()
-                        dismiss()
-                    }
-                    .disabled(selectedType == "SAVED" && selectedWorkout == nil)
-                }
+                .onMove(perform: moveExercise)
+                .onDelete(perform: deleteExercise)
                 
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                }
-                
-//                ToolbarItem(placement: .topBarLeading) {
-//                    if !selectedExercises.isEmpty {
-//                        EditButton()
-//                            .foregroundColor(.black)
-//                            .tint(.black)
-//                    }
-//                }
+            } else if selectedEventType == .measurement {
+                Section {
+                    ForEach(MeasurementType.allCases) { type in
+                        HStack {
+                            Text(type.rawValue)
+                                .bold()
+                            Spacer()
+                            TextField(
+                                "Enter value",
+                                text: Binding(
+                                    get: {
+                                        if let value = measurementValues[type] {
+                                            return String(value)
+                                        } else {
+                                            return ""
+                                        }
+                                    },
+                                    set: { newValue in
+                                        if let doubleValue = Double(newValue) {
+                                            measurementValues[type] = doubleValue
+                                        } else {
+                                            measurementValues[type] = nil
+                                        }
+                                    }
+                                )
+                            )
+                            .keyboardType(.decimalPad)
+                            .multilineTextAlignment(.trailing)
+                        }
 
-            }
-            .sheet(isPresented: $showingExerciseSheet) {
-                NavigationStack {
-                    ExerciseSelectionView(
-                        selectedExercises: $selectedExercises,
-                        workoutCategory: selectedCategory
-                    )
-                }
-            }
-            .onChange(of: selectedExercises) {
-                for exercise in selectedExercises {
-                    if exerciseOrder.contains(exercise.id) == false {
-                        exerciseOrder.append(exercise.id)
                     }
                 }
+                .listRowBackground(Color("Background"))
+            }
+
                 
-                exerciseOrder.removeAll { id in
-                    selectedExercises.contains(where: { $0.id == id }) == false
+            
+        }
+        .listStyle(GroupedListStyle())
+        .scrollContentBackground(.hidden)
+        .background(Color("Background"))
+        .toolbar {
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Save") {
+                    saveWorkoutEvent()
+                    dismiss()
                 }
+            }
+            
+            ToolbarItem(placement: .topBarLeading) {
+                Button("Cancel") {
+                    dismiss()
+                }
+            }
+            
+            if !selectedExercises.isEmpty {
+                ToolbarItem(placement: .bottomBar) {
+                    EditButton()
+                        .tint(.black)
+                }
+            }
+        
+        }
+        .onChange(of: selectedExercises) {
+            for exercise in selectedExercises {
+                if exerciseOrder.contains(exercise.id) == false {
+                    exerciseOrder.append(exercise.id)
+                }
+            }
+            
+            exerciseOrder.removeAll { id in
+                selectedExercises.contains(where: { $0.id == id }) == false
             }
         }
-        
+ 
     }
     
     private func saveWorkoutEvent() {
         
-        if let event = editingEvent {
-            event.date = date
+        // Handle editing an existing workout event
+        if let event = editingEvent, selectedEventType != .measurement {
+            event.date = editableDate ?? event.date
             event.title = eventTitle.isEmpty ? nil : eventTitle
             
             let existing = Set(event.workoutExercises)
             let selected = Set(selectedExercises.map { $0.id })
             
+            // Remove exercises no longer selected
             for w in event.workoutExercises {
                 if !selected.contains(w.exercise.id) {
                     context.delete(w)
                 }
             }
             
+            // Add/update exercises
             for (index, exerciseID) in exerciseOrder.enumerated() {
                 guard let exercise = selectedExercises.first(where: { $0.id == exerciseID }) else { continue }
                 
@@ -238,29 +285,41 @@ struct WorkoutSelectionView: View {
             return
         }
         
-        let newEvent = WorkoutEvent(
-            date: date,
-            title: eventTitle.isEmpty ? nil : eventTitle,
-            order: 0
-        )
-        
-        context.insert(newEvent)
-        
-        for (index, exerciseID) in exerciseOrder.enumerated() {
-            if let exercise = selectedExercises.first(where: { $0.id == exerciseID }) {
-                let link = WorkoutExercise(
-                    notes: tempNotes[exerciseID],
-                    order: index,
-                    workoutEvent: newEvent,
-                    exercise: exercise
-                )
-                newEvent.workoutExercises.append(link)
+        // Handle creating a new event
+        switch selectedEventType {
+        case .newWorkout, .savedWorkout:
+            let newEvent = WorkoutEvent(
+                date: date,
+                title: eventTitle.isEmpty ? nil : eventTitle,
+                order: 0
+            )
+            context.insert(newEvent)
+            
+            for (index, exerciseID) in exerciseOrder.enumerated() {
+                if let exercise = selectedExercises.first(where: { $0.id == exerciseID }) {
+                    let link = WorkoutExercise(
+                        notes: tempNotes[exerciseID],
+                        order: index,
+                        workoutEvent: newEvent,
+                        exercise: exercise
+                    )
+                    newEvent.workoutExercises.append(link)
+                }
             }
+            
+        case .measurement:
+            let newMeasurement = Measurement(
+                type: selectedMeasurementType,
+                value: measurementValue,
+                date: date
+            )
+            context.insert(newMeasurement)
         }
         
         try? context.save()
-
+        dismiss()
     }
+
 
     
     private func moveExercise(from source: IndexSet, to destination: Int) {
@@ -281,7 +340,7 @@ struct WorkoutSelectionView: View {
 
 #Preview {
     WorkoutSelectionView(
-        defaultDate: Date(),
+        date: .constant(Date()),
         sampleExercises: [
             Exercise(name: "Bench Press"),
             Exercise(name: "Squat"),
@@ -289,3 +348,5 @@ struct WorkoutSelectionView: View {
         ]
     )
 }
+
+

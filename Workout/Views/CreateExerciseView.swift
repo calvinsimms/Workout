@@ -132,6 +132,15 @@ struct CreateExerciseView: View {
                         .foregroundStyle(.secondary)
                 }
             }
+            
+            if isNewExercise == false {
+                
+                Text("Delete Exercise Data")
+                
+                Text("Delete Exercise")
+                
+            }
+            
         }
         
         // MARK: - Navigation Title

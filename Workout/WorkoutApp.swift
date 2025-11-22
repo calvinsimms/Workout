@@ -15,7 +15,6 @@ struct WorkoutApp: App {
             Exercise.self,
             WorkoutEvent.self,
             WorkoutExercise.self,
-            TargetSet.self,
             WorkoutSet.self
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)

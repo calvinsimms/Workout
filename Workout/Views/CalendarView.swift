@@ -220,6 +220,9 @@ struct CalendarView: View {
         SortDescriptor(\WorkoutEvent.order, order: .forward)
     ])
     private var allEvents: [WorkoutEvent]
+    
+    @Query(sort: [SortDescriptor(\MeasurementEvent.date, order: .forward)])
+    private var allMeasurementEvents: [MeasurementEvent]
 
     @State private var selectedDate: Date = Date()
     @State private var currentMonthDate: Date = Calendar.current.date(
@@ -239,19 +242,60 @@ struct CalendarView: View {
         cal.locale = .current
         return cal
     }
+    
+    private enum DayEvent: Identifiable {
+        case workout(WorkoutEvent)
+        case measurement(MeasurementEvent)
+
+        var id: UUID {
+            switch self {
+            case .workout(let w): return w.id
+            case .measurement(let m): return m.id
+            }
+        }
+
+        var order: Int {
+            switch self {
+            case .workout(let w): return w.order
+            case .measurement(let m): return m.order
+            }
+        }
+
+        var displayTitle: String {
+            switch self {
+            case .workout(let w): return w.displayTitle
+            case .measurement: return "Measurements"
+            }
+        }
+    }
+    
+    
 
     // Events for the currently selected day
-    private var eventsForSelectedDate: [WorkoutEvent] {
-        allEvents
+//    private var eventsForSelectedDate: [WorkoutEvent] {
+//        allEvents
+//            .filter { calendar.isDate($0.date, inSameDayAs: selectedDate) }
+//            .sorted { lhs, rhs in
+//                if lhs.order != rhs.order {
+//                    return lhs.order < rhs.order
+//                }
+//                let lTime = lhs.startTime ?? lhs.date
+//                let rTime = rhs.startTime ?? rhs.date
+//                return lTime < rTime
+//            }
+//    }
+    
+    private var eventsForSelectedDate: [DayEvent] {
+        let workouts = allEvents
             .filter { calendar.isDate($0.date, inSameDayAs: selectedDate) }
-            .sorted { lhs, rhs in
-                if lhs.order != rhs.order {
-                    return lhs.order < rhs.order
-                }
-                let lTime = lhs.startTime ?? lhs.date
-                let rTime = rhs.startTime ?? rhs.date
-                return lTime < rTime
-            }
+            .map { DayEvent.workout($0) }
+
+        let measurements = allMeasurementEvents
+            .filter { calendar.isDate($0.date, inSameDayAs: selectedDate) }
+            .map { DayEvent.measurement($0) }
+
+        return (workouts + measurements)
+            .sorted { $0.order < $1.order }
     }
 
     var body: some View {
@@ -266,43 +310,45 @@ struct CalendarView: View {
 
 
                 let dayEvents = eventsForSelectedDate
-
-                Section {
-                    if dayEvents.isEmpty {
-                        Text("No workouts planned today")
-                            .foregroundColor(.gray)
-                            .italic()
-                            .padding(.vertical, 5)
-                            .listRowBackground(Color("Background"))
-                    } else {
-                        ForEach(dayEvents) { event in
-                            NavigationLink {
-                                if let template = event.workoutTemplate {
-                                    WorkoutView(workoutTemplate: template)
-                                } else {
-                                    WorkoutView(workoutEvent: event)
-                                }
-                            } label: {
-                                Text(event.displayTitle)
-                                    .font(.title3.bold())
-                                    .padding(.vertical, 5)
-                            }
-                            .listRowBackground(Color("Background"))
-                        }
-                        .onDelete { offsets in
-                            deleteEvents(at: offsets, in: dayEvents)
-                        }
-                        .onMove { source, destination in
-                            moveEvents(from: source, to: destination, in: dayEvents)
-                        }
-                        
-                    
-                    }
-                    
+                let workoutEvents = dayEvents.compactMap { event -> WorkoutEvent? in
+                    if case .workout(let w) = event { return w }
+                    else { return nil }
                 }
+
+                if workoutEvents.isEmpty {
+                    Text("No workouts planned today")
+                        .foregroundColor(.gray)
+                        .italic()
+                        .padding(.vertical, 5)
+                        .listRowBackground(Color("Background"))
+                } else {
+                    ForEach(workoutEvents) { event in
+                        NavigationLink {
+                            if let template = event.workoutTemplate {
+                                WorkoutView(workoutTemplate: template)
+                            } else {
+                                WorkoutView(workoutEvent: event)
+                            }
+                        } label: {
+                            Text(event.displayTitle)
+                                .font(.title3.bold())
+                                .padding(.vertical, 5)
+                        }
+                        .listRowBackground(Color("Background"))
+                    }
+                    .onDelete { offsets in
+                        deleteEvents(at: offsets, in: workoutEvents)
+                    }
+                    .onMove { source, destination in
+                        moveEvents(from: source, to: destination, in: workoutEvents)
+                    }
+                }
+
+                    
+                
           
             }
-            .listStyle(.plain)
+            .listStyle(GroupedListStyle())
             .scrollContentBackground(.hidden)
             .background(Color("Background"))
             .navigationTitle(Text(Self.monthYearFormatter.string(from: currentMonthDate)))
@@ -323,16 +369,26 @@ struct CalendarView: View {
                 }
             }
             .sheet(isPresented: $isAddWorkoutPresented) {
-                WorkoutSelectionView(defaultDate: selectedDate)
-                    .presentationDetents([.large])
+                NavigationStack {
+                    VStack(spacing: 0) {
+                        WorkoutSelectionView(date: $selectedDate)
+                    }
+                    .navigationTitle("Add Event")
+                    .navigationBarTitleDisplayMode(.inline)
+                }
             }
         }
     }
 
     // MARK: - Helpers
-
+//
+//    private func hasEvent(on date: Date) -> Bool {
+//        allEvents.contains { calendar.isDate($0.date, inSameDayAs: date) }
+//    }
+    
     private func hasEvent(on date: Date) -> Bool {
-        allEvents.contains { calendar.isDate($0.date, inSameDayAs: date) }
+        allEvents.contains { calendar.isDate($0.date, inSameDayAs: date) } ||
+        allMeasurementEvents.contains { calendar.isDate($0.date, inSameDayAs: date) }
     }
 
     private func deleteEvents(at offsets: IndexSet, in dayEvents: [WorkoutEvent]) {
@@ -363,6 +419,34 @@ struct CalendarView: View {
         }
     }
 }
+
+struct MeasurementEventView: View {
+    let measurementEvent: MeasurementEvent
+
+    var body: some View {
+        List {
+            Section(header: Text("Date").font(.headline)) {
+                Text(measurementEvent.date, style: .date)
+            }
+
+            Section(header: Text("Measurements").font(.headline)) {
+                ForEach(measurementEvent.measurements.sorted(by: { $0.type.rawValue < $1.type.rawValue })) { measurement in
+                    HStack {
+                        Text(measurement.type.rawValue)
+                            .bold()
+                        Spacer()
+                        Text("\(measurement.value, specifier: "%.1f")")
+                    }
+                    .padding(.vertical, 2)
+                }
+            }
+        }
+        .listStyle(GroupedListStyle())
+        .navigationTitle("Measurements")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
 
 // MARK: - Preview
 

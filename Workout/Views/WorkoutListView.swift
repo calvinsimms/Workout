@@ -17,6 +17,8 @@ struct WorkoutListView: View {
     @State private var expandedCategories: Set<WorkoutCategory> = []
     @State private var selectedCategory: WorkoutCategory = .resistance
     @State private var showingWorkoutSelection = false
+    @State private var selectedDateForNewWorkout = Date()
+
 
     @Query(sort: \WorkoutTemplate.order, order: .forward) private var workoutTemplates: [WorkoutTemplate]
     
@@ -53,7 +55,7 @@ struct WorkoutListView: View {
                             .foregroundColor(.gray)
                             .italic()
                             .padding(.vertical, 5)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+//                            .frame(maxWidth: .infinity, alignment: .leading)
                             .listRowBackground(Color("Background"))
                     } else {
                         ForEach(todaysEvents) { event in
@@ -126,7 +128,6 @@ struct WorkoutListView: View {
 
             }
             .listStyle(GroupedListStyle())
-            .listSectionSpacing(.compact)
             .scrollContentBackground(.hidden)
             .environment(\.editMode, editMode)
             .safeAreaInset(edge: .bottom) {
@@ -151,11 +152,16 @@ struct WorkoutListView: View {
                       Image(systemName: "plus")
                           .font(.headline)
                           .foregroundColor(.black)
+                      
                 }
             }
         }
         .sheet(isPresented: $showingWorkoutSelection) {
-            WorkoutSelectionView(defaultDate: Date())
+            NavigationStack {
+                WorkoutSelectionView(date: $selectedDateForNewWorkout)
+                    .navigationTitle("Add Event")
+                    .navigationBarTitleDisplayMode(.inline)
+            }
         }
     }
     

@@ -53,7 +53,8 @@ struct ExercisesView: View {
                         }
                     }
                 }
-                .listStyle(.plain)
+                .listStyle(GroupedListStyle())
+                .scrollContentBackground(.hidden)
                 .navigationTitle("Exercises")
                 .toolbar {
                     ToolbarItem(placement: .navigationBarLeading) {

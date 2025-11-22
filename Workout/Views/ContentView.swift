@@ -119,13 +119,18 @@ struct ContentView: View {
                 Exercise(name: "Lateral Raise - Cable", subCategory: .shoulders, isBodyweight: false),
                 
                 // Legs
-                Exercise(name: "Squats", subCategory: .legs, isBodyweight: false),
-                Exercise(name: "Deadlifts", subCategory: .legs, isBodyweight: false),
+                Exercise(name: "Bulgarian Split Squat", subCategory: .legs, isBodyweight: false),
+                Exercise(name: "Deadlift", subCategory: .legs, isBodyweight: false),
+                Exercise(name: "Leg Press", subCategory: .legs, isBodyweight: false),
+                Exercise(name: "Lunge", subCategory: .legs, isBodyweight: false),
+                Exercise(name: "RDL", subCategory: .legs, isBodyweight: false),
+                Exercise(name: "Squat", subCategory: .legs, isBodyweight: false),
                 
                 // Back
-                Exercise(name: "Pull-ups", subCategory: .back, isBodyweight: true),
+                Exercise(name: "Back Extension", subCategory: .back, isBodyweight: false),
                 Exercise(name: "Lat Pulldown", subCategory: .back, isBodyweight: false),
-                Exercise(name: "Seated Row", subCategory: .back, isBodyweight: false),
+                Exercise(name: "Pull-up", subCategory: .back, isBodyweight: true),
+                Exercise(name: "Cable Row - Close Grip", subCategory: .back, isBodyweight: false),
                 
                 // Biceps
                 Exercise(name: "Barbell Curl", subCategory: .biceps, isBodyweight: false),
@@ -134,8 +139,10 @@ struct ContentView: View {
                 // Triceps
                 Exercise(name: "Tricep Pushdown", subCategory: .triceps, isBodyweight: false),
                 Exercise(name: "Overhead Tricep Extension", subCategory: .triceps, isBodyweight: false),
+                Exercise(name: "Tricep Rope Extension", subCategory: .triceps, isBodyweight: false),
                 
                 // Abs
+                Exercise(name: "Ab Wheel Weighted", subCategory: .abs, isBodyweight: true),
                 Exercise(name: "Crunches", subCategory: .abs, isBodyweight: true),
                 Exercise(name: "Plank", subCategory: .abs, isBodyweight: true),
                 

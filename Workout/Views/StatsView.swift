@@ -83,9 +83,11 @@ struct StatsView: View {
                     .bold()
                     .listRowBackground(Color("Background"))
                 }
-                .listStyle(.plain)
+                .listStyle(GroupedListStyle())
+                
             }
             .background(Color("Background"))
+            .scrollContentBackground(.hidden)
             .navigationTitle("Statistics")
             .sheet(item: $selectedExercise) { exercise in
                 ExerciseStatsSheet(exercise: exercise)
@@ -290,7 +292,7 @@ struct ExerciseStatsSheet: View {
 
                     }
                     HStack {
-                        Text("Change:")
+                        Text("Change")
                         
                         Spacer()
                         
@@ -308,7 +310,7 @@ struct ExerciseStatsSheet: View {
 
                     
                     SetHistoryView(
-                        allSets: exercise.allSetsByDateDescending,
+                        allSets: exercise.allSetsByDateDescending.filter { $0.isTracked && $0.adjustedE1RM != nil },
                         topSets: exercise.topSetsByDate,
                         showTopOnly: $showTopOnly,
                         headerTitle: "Set History"
@@ -409,32 +411,31 @@ struct E1RMPoint: Identifiable {
 
 extension WorkoutSet {
     var adjustedE1RM: Double? {
-           guard let weight = weight,
-                 let reps = reps,
-                 reps > 0 else { return nil }
+        guard let weight = weight, let reps = reps else { return nil }
 
-           let rpeValue = rpe ?? 10
-           let repsAtRPE10 = Double(reps) + (10 - rpeValue)
+        let rpeValue = rpe ?? 10
+        let rir = max(0, 10 - rpeValue)
 
-           let denominator = 1.0278 - 0.0278 * repsAtRPE10
-           guard denominator > 0 else { return nil }
+        // Base Epley
+        let estimated = weight * (1 + Double(reps) / 30.0)
 
-           return weight / denominator
-       }
+        // RIR *adds* potential strength, not subtract
+        return estimated * (1.0 + (Double(rir) * 0.03))
+    }
 }
 
 extension Exercise {
 
     var allSetsWithAdjustedE1RM: [WorkoutSet] {
-           allSetsByDateDescending
-       }
-    
+        allSetsByDateDescending.filter {
+            $0.isTracked &&
+            $0.adjustedE1RM != nil
+        }
+    }
+
     var allSetsByDateDescending: [WorkoutSet] {
-         workoutExercises
-             .flatMap { $0.sets }
-             .filter { $0.adjustedE1RM != nil }
-             .sorted { $0.date > $1.date }
-     }
+        workoutExercises.flatMap { $0.sets }.sorted { $0.date > $1.date }
+    }
     
     var totalRepsHistory: [ChartPoint] {
           let groupedByDay = Dictionary(grouping: allSetsWithAdjustedE1RM) {
@@ -503,9 +504,13 @@ extension Exercise {
         }
 
         return groupedByDay.compactMap { day, sets in
-            guard let maxE1RM = sets.compactMap({ $0.adjustedE1RM }).max(),
-                  maxE1RM > 0 else { return nil }
-            let avgWeight = sets.compactMap { $0.weight }.reduce(0, +) / Double(sets.count)
+            
+            let validSets = sets.filter { $0.adjustedE1RM != nil && $0.weight != nil }
+
+            guard !validSets.isEmpty else { return nil }
+            guard let maxE1RM = validSets.compactMap({ $0.adjustedE1RM }).max() else { return nil }
+
+            let avgWeight = validSets.compactMap { $0.weight }.reduce(0, +) / Double(validSets.count)
             let avgIntensity = (avgWeight / maxE1RM) * 100
             return ChartPoint(date: day, value: avgIntensity)
         }

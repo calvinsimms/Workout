@@ -42,7 +42,8 @@ struct SettingsView: View {
             .bold()
             .foregroundColor(.black)
             .tint(.black)
-            .listStyle(.plain)
+            .listStyle(GroupedListStyle())
+            .scrollContentBackground(.hidden)
             .background(Color("Background"))
             .navigationTitle("Settings ")
         }

@@ -20,19 +20,14 @@ enum SetType: String, CaseIterable, Identifiable, Codable {
     case resistance = "Resistance"
     case cardio = "Cardio"
     case bodyweight = "Bodyweight"
-    
-    /// Required by `Identifiable`, used to uniquely identify each case.
-    /// Returns the case’s raw string value as its identifier.
+
     var id: String { rawValue }
 }
 
-
-/// Describes all possible measurable workout attributes.
 enum WorkoutAttribute: String, CaseIterable, Identifiable {
     case weight, reps, rpe, duration, distance, resistance, heartRate
     var id: String { rawValue }
 
-    /// A short display label for UI.
     var label: String {
         switch self {
         case .weight: return "Weight"
@@ -47,7 +42,6 @@ enum WorkoutAttribute: String, CaseIterable, Identifiable {
 }
 
 extension SetType {
-    /// Returns which attributes apply to this type of exercise.
     var relevantAttributes: [WorkoutAttribute] {
         switch self {
         case .resistance:
@@ -60,11 +54,6 @@ extension SetType {
     }
 }
 
-
-// MARK: - WorkoutSet Model
-/// A model representing a single exercise set within a workout.
-/// Each `WorkoutSet` stores performance data for one attempt at an exercise.
-/// Conforms to `@Model` to integrate with SwiftData’s persistence system.
 @Model
 final class WorkoutSet: Identifiable {
     
@@ -72,6 +61,7 @@ final class WorkoutSet: Identifiable {
     var type: SetType
     var date: Date
 
+    var isTracked: Bool
     // Actual values
     var weight: Double?
     var reps: Int?
@@ -97,6 +87,7 @@ final class WorkoutSet: Identifiable {
     init(
         type: SetType,
         date: Date = Date(),
+        isTracked: Bool = true,
         weight: Double? = nil,
         reps: Int? = nil,
         rpe: Double? = nil,
@@ -109,6 +100,7 @@ final class WorkoutSet: Identifiable {
         self.id = UUID()
         self.type = type
         self.date = date
+        self.isTracked = isTracked
         self.weight = weight
         self.reps = reps
         self.rpe = rpe
@@ -118,7 +110,6 @@ final class WorkoutSet: Identifiable {
         self.heartRate = heartRate
         self.order = order
 
-        // Target values start nil
         self.targetWeight = nil
         self.targetReps = nil
         self.targetRPE = nil
@@ -127,15 +118,4 @@ final class WorkoutSet: Identifiable {
         self.targetResistance = nil
         self.targetHeartRate = nil
     }
-
-//    // Convenience function to copy target → actual
-//    func applyTargetToActual() {
-//        if let t = targetWeight { weight = t }
-//        if let t = targetReps { reps = t }
-//        if let t = targetRPE { rpe = t }
-//        if let t = targetDuration { duration = t }
-//        if let t = targetDistance { distance = t }
-//        if let t = targetResistance { resistance = t }
-//        if let t = targetHeartRate { heartRate = t }
-//    }
 }

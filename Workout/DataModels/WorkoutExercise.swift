@@ -65,7 +65,7 @@ final class WorkoutExercise: Identifiable, Hashable {
     ///
     /// Cascade deletion ensures that when a `WorkoutExercise` is deleted,
     /// all associated `TargetSet` records are automatically removed.
-    @Relationship(deleteRule: .cascade) var targetSets: [TargetSet] = []
+//    @Relationship(deleteRule: .cascade) var targetSets: [TargetSet] = []
     
     @Relationship(deleteRule: .cascade) var sets: [WorkoutSet] = []
     
@@ -88,7 +88,6 @@ final class WorkoutExercise: Identifiable, Hashable {
         self.workoutTemplate = workoutTemplate
         self.workoutEvent = nil
         self.exercise = exercise
-        self.targetSets = []
     }
 
     /// Used when attaching to a WorkoutEvent (e.g., logged sessions)
@@ -109,33 +108,8 @@ final class WorkoutExercise: Identifiable, Hashable {
         self.workoutTemplate = nil
         self.workoutEvent = workoutEvent
         self.exercise = exercise
-        self.targetSets = []
     }
 
-    func syncSetCounts() {
-        guard sets.count != targetSets.count else { return }
-
-        let maxCount = max(sets.count, targetSets.count)
-
-        // Fill missing target sets
-        while targetSets.count < maxCount {
-            let newOrder = targetSets.count
-            let newTargetSet = TargetSet(order: newOrder, workoutExercise: self)
-            targetSets.append(newTargetSet)
-        }
-
-        // Fill missing actual sets
-        while sets.count < maxCount {
-            let newOrder = sets.count
-            let newActualSet = WorkoutSet(
-                type: exercise.setType,
-                date: workoutEvent?.date ?? .now,
-                order: newOrder
-            )
-            newActualSet.workoutExercise = self
-            sets.append(newActualSet)
-        }
-    }
 
     /// Adds a new actual set to this exercise.
     func addSet() {
@@ -146,49 +120,6 @@ final class WorkoutExercise: Identifiable, Hashable {
 
         try? newSet.modelContext?.save()
     }
-
-
-//    /// Deletes a specific actual set from this exercise and maintains ordering.
-//    func deleteSet(_ set: WorkoutSet) {
-//        guard let context = set.modelContext else { return }
-//
-//        // First delete from context
-//        context.delete(set)
-//        
-//        // Then remove from the sets array
-//        sets.removeAll { $0.id == set.id }
-//
-//        // Reorder remaining sets
-//        let sortedSets = sets.sorted { $0.order < $1.order }
-//        for (index, s) in sortedSets.enumerated() {
-//            s.order = index
-//        }
-//
-//        try? context.save()
-//    }
-    
-//    func applyTargetSetToActual(at index: Int) {
-//         guard targetSets.indices.contains(index) else { return }
-//         let target = targetSets[index]
-//
-//         // Make sure actual set exists
-//         if sets.count <= index {
-//             let newSet = WorkoutSet(type: exercise.setType, date: workoutEvent?.date ?? Date(), order: index)
-//             newSet.workoutExercise = self
-//             sets.append(newSet)
-//         }
-//
-//         let actual = sets[index]
-//
-//         // Copy values only if target has a non-nil value
-//         if let weight = target.weight { actual.weight = weight }
-//         if let reps = target.reps { actual.reps = reps }
-//         if let rpe = target.rpe { actual.rpe = rpe }
-//         if let duration = target.duration { actual.duration = duration }
-//         if let distance = target.distance { actual.distance = distance }
-//         if let resistance = target.resistance { actual.resistance = resistance }
-//         if let heartRate = target.heartRate { actual.heartRate = heartRate }
-//     }
     
     // MARK: - Equatable & Hashable
     static func == (lhs: WorkoutExercise, rhs: WorkoutExercise) -> Bool {

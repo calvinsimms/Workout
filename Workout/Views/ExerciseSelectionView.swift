@@ -55,67 +55,49 @@ struct ExerciseSelectionView: View {
         allExercises.filter { $0.category == workoutCategory }
     }
     var body: some View {
-        VStack(spacing: 0) {
-            
-            // Exercise List
-            // Filtered & grouped exercise list
-            /// This makes it so you only see exercises that belong to the parent category
-            List {
-                if workoutCategory == .resistance {
-                    // Keep track of which groups are expanded
-                    ForEach(SubCategory.allCases) { sub in
-                        DisclosureGroup(
-                            isExpanded: Binding(
-                                get: { expandedGroups.contains(sub) },
-                                set: { isExpanded in
-                                    withAnimation {
-                                       if isExpanded {
-                                           expandedGroups.insert(sub)
-                                       } else {
-                                           expandedGroups.remove(sub)
-                                       }
+        List {
+            if workoutCategory == .resistance {
+                ForEach(SubCategory.allCases) { sub in
+                    DisclosureGroup(
+                        isExpanded: Binding(
+                            get: { expandedGroups.contains(sub) },
+                            set: { isExpanded in
+                                withAnimation {
+                                   if isExpanded {
+                                       expandedGroups.insert(sub)
+                                   } else {
+                                       expandedGroups.remove(sub)
                                    }
-                                }
-                            )
-                        ) {
-                            // Exercises within this subcategory
-                            ForEach(
-                                allExercises.filter { $0.subCategory == sub },
-                                id: \.id
-                            ) { exercise in
-                                exerciseRow(exercise)
+                               }
                             }
-                        } label: {
-                            Text(sub.rawValue)
-//                                .font(.title2)
-//                                .padding(.vertical, 5)
-                                .fontWeight(.bold)
-                                .foregroundColor(.black)
+                        )
+                    ) {
+                        ForEach(
+                            allExercises.filter { $0.subCategory == sub },
+                            id: \.id
+                        ) { exercise in
+                            exerciseRow(exercise)
                         }
-                        .listRowBackground(Color("Background"))
-                        .tint(.black)
-
+                    } label: {
+                        Text(sub.rawValue)
                     }
-                } else {
-                    // Flat list for cardio or "other" categories
-                    ForEach(
-                        allExercises.filter { $0.category == workoutCategory },
-                        id: \.id
-                    ) { exercise in
-                        exerciseRow(exercise)
-                    }
+                    .listRowBackground(Color("Background"))
                 }
+            } else {
+                ForEach(
+                    allExercises.filter { $0.category == workoutCategory },
+                    id: \.id
+                ) { exercise in
+                    exerciseRow(exercise)
+                }
+                .listRowBackground(Color("Background"))
             }
-            .foregroundStyle(.black)
-            .fontWeight(.bold)
-            .listStyle(.plain)
-            .safeAreaInset(edge: .bottom) {
-                Color.clear.frame(height: 70)
-            }
-
-            
         }
+        .listStyle(GroupedListStyle())
+        .fontWeight(.bold)
+        .scrollContentBackground(.hidden)
         .background(Color("Background"))
+
         .navigationTitle("Select Exercises")
         .toolbar {
                       
@@ -124,25 +106,23 @@ struct ExerciseSelectionView: View {
                     newExercise = Exercise(name: "", category: workoutCategory)
                     showingCreateExercise = true
                 }) {
-                    Image(systemName: "plus")
-                        .font(.headline)
-                        .foregroundColor(.black)
+                    Text("New")
                 }
             }
             
-            ToolbarItem(placement: .bottomBar) {
-                Button(action: {
-                    selectedExercises = Set(selectedExercises)
-                    dismiss()
-                }) {
-                    Text("Done")
-                        .font(.headline)
-                        .fontWeight(.bold)
-                        .foregroundColor(.black)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                }
-            }
+//            ToolbarItem(placement: .bottomBar) {
+//                Button(action: {
+//                    selectedExercises = Set(selectedExercises)
+//                    dismiss()
+//                }) {
+//                    Text("Done")
+//                        .font(.headline)
+//                        .fontWeight(.bold)
+//                        .foregroundColor(.black)
+//                        .frame(maxWidth: .infinity)
+//                        .padding(.vertical, 10)
+//                }
+//            }
         }
         
         // Sheet for Creating a New Exercise
