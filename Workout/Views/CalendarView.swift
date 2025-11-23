@@ -316,8 +316,8 @@ struct CalendarView: View {
                 }
 
                 if workoutEvents.isEmpty {
-                    Text("No workouts planned today")
-                        .foregroundColor(.gray)
+                    Text("No events today")
+                        .foregroundColor(.gray.opacity(0.6))
                         .italic()
                         .padding(.vertical, 5)
                         .listRowBackground(Color("Background"))

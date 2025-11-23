@@ -30,6 +30,8 @@ struct WorkoutView: View {
     @State private var selectedExercise: Exercise?
     @State private var setCategoryForExercise: [UUID: SetCategory] = [:]
     @State private var showingSetsInfo = false
+    @State private var showingCalculator = false
+
     
     private var orderedExercises: Binding<[WorkoutExercise]>? {
         guard let event = workoutEvent else { return nil }
@@ -63,12 +65,32 @@ struct WorkoutView: View {
                             DisclosureGroup {
                                 VStack(alignment: .leading, spacing: 10) {
                                     HStack {
+                                        
+                                        Button {
+                                             showingCalculator = true
+                                         } label: {
+                                             Image(systemName: "plus.forwardslash.minus")
+                                                 .font(.subheadline)
+                                                 .bold()
+                                         }
+                                         .buttonStyle(.glass)
+                                         .sheet(isPresented: $showingCalculator) {
+                                             NavigationStack {
+                                                 CalculatorView()
+                                                     .navigationTitle("Calculator")
+                                                     .navigationBarTitleDisplayMode(.inline)
+                                                     .presentationDetents([.medium])
 
-                                        Button("Stats") {
+                                             }
+                                         }
+                                        
+                                        Button {
                                             selectedExercise = workoutExercise.exercise
-                                            }
-                                           .buttonStyle(.glass)
-                                           .font(.subheadline)
+                                        } label: {
+                                            Image(systemName: "chart.bar.fill")
+                                                .font(.subheadline)
+                                        }
+                                        .buttonStyle(.glass)
                                         
                                         Spacer()
                                         

@@ -228,7 +228,8 @@ struct ExerciseStatsSheet: View {
                     
                     if exercise.topE1RMHistory.isEmpty {
                         Text("No exercise data available yet.")
-                            .foregroundStyle(.gray)
+                            .foregroundStyle(.gray.opacity(0.6))
+                            .italic()
                     } else {
                         Chart(chartData) { point in
                             LineMark(
@@ -293,6 +294,7 @@ struct ExerciseStatsSheet: View {
                     }
                     HStack {
                         Text("Change")
+                            .bold()
                         
                         Spacer()
                         

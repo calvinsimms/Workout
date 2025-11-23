@@ -102,31 +102,32 @@ final class Exercise: Identifiable, Hashable {
     @Relationship(deleteRule: .cascade, inverse: \WorkoutExercise.exercise)
     var workoutExercises: [WorkoutExercise] = []
 
-    // MARK: - Initializer
-    /// Creates a new Exercise instance with an optional subcategory.
-    /// If a subcategory is provided, its parent category is automatically assigned.
-    /// Otherwise, you can explicitly set the category (e.g., `.cardio`, `.other`).
-    ///
-    /// - Parameters:
-    ///   - id: Optional UUID. Defaults to a new UUID if not provided.
-    ///   - name: The exercise’s name.
-    ///   - category: The parent category (Resistance, Cardio, or Other).
-    ///   - subCategory: Optional resistance subcategory.
+    @Attribute var isFavorite: Bool = false
+
+    
     init(
         id: UUID = UUID(),
         name: String,
         category: WorkoutCategory = .other,
         subCategory: SubCategory? = nil,
-        isBodyweight: Bool = false
+        isBodyweight: Bool = false,
+        isFavorite: Bool = false
+
     ) {
         self.id = id
         self.name = name
         self.subCategory = subCategory
         self.isBodyweight = isBodyweight
         self.category = subCategory?.parentCategory ?? category
+        self.isFavorite = isFavorite
+
     }
     
     // MARK: - Derived Properties
+    
+    var canBeFavorited: Bool {
+         category == .resistance
+     }
 
     /// Determines which `SetType` applies to this exercise.
     /// Used to decide which attributes or inputs are relevant when planning or logging sets.

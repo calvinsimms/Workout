@@ -52,7 +52,7 @@ struct WorkoutListView: View {
                 ) {
                     if todaysEvents.isEmpty {
                         Text("No workouts planned today")
-                            .foregroundColor(.gray)
+                            .foregroundColor(.gray.opacity(0.6))
                             .italic()
                             .padding(.vertical, 5)
 //                            .frame(maxWidth: .infinity, alignment: .leading)
@@ -98,7 +98,7 @@ struct WorkoutListView: View {
                     if categoryWorkouts.isEmpty {
                         
                         Text("No saved workouts")
-                            .foregroundColor(.gray)
+                            .foregroundColor(.gray.opacity(0.6))
                             .italic()
                             .padding(.vertical, 5)
                             .frame(maxWidth: .infinity, alignment: .leading)

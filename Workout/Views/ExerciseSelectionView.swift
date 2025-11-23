@@ -11,51 +11,64 @@ import SwiftData
 // A view that allows the user to select exercises from a list.
 // Users can also create new exercises via a sheet modal.
 struct ExerciseSelectionView: View {
-    // A binding to the parent’s set of selected exercises.
-    // When a user selects/deselects exercises here, it updates the parent view.
     @Binding var selectedExercises: Set<Exercise>
     
-    // A SwiftData query that fetches all exercises from the database,
-    // sorted alphabetically by name in ascending order.
-    @Query(sort: \Exercise.name, order: .forward) private var allExercises: [Exercise]
-    
-    // Access to the model context (used for inserting new exercises).
+    @Query(sort: \Exercise.name, order: .forward) private var allExercisesQuery: [Exercise]
+
     @Environment(\.modelContext) private var modelContext
-    
-    // Dismiss environment action to close the current view.
     @Environment(\.dismiss) private var dismiss
     
-    // Controls presentation of the create-exercise sheet.
-    // When true, the "CreateExerciseView" modal is presented to the user.
     @State private var showingCreateExercise = false
-
-    // A temporary exercise object used for creating new exercises.
-    // This instance is passed into the create sheet, then saved or discarded
-    // depending on user action.
     @State private var newExercise = Exercise(name: "")
-    
-    // Tracks which resistance subcategories are currently expanded in the list.
-    // Each `SubCategory` in this set corresponds to a DisclosureGroup that is open.
-    // Used to control the expand/collapse state of each subcategory section dynamically,
-    // so that the UI remembers which groups the user has expanded while browsing exercises.
     @State private var expandedGroups: Set<SubCategory> = []
-    
-    // For animating the Confirm button when the page loads
     @State private var showConfirmButton = false
+    
+    @State private var favoritesExpanded: Bool = false
 
-    // The workout category that determines which exercises should be shown.
-    // Passed from the parent view (e.g., CreateWorkoutView) so that only
-    // exercises matching this type (Resistance, Cardio, or Other) appear in the list.
+    
     var workoutCategory: WorkoutCategory
-
-    // Computed property that filters all stored exercises based on the selected
-    // workout category. This ensures the user only sees relevant exercises
-    // for the type of workout they are currently building.
+    
     private var filteredExercises: [Exercise] {
         allExercises.filter { $0.category == workoutCategory }
     }
+    
+    var exercises: [Exercise]?
+    
+    private var allExercises: [Exercise] {
+        exercises ?? allExercisesQuery
+    }
+    
+    
     var body: some View {
         List {
+            
+            Section {
+                let favoriteExercises = allExercises.filter { $0.category == .resistance && $0.isFavorite }
+                
+                DisclosureGroup(
+                    "Favorites",
+                    isExpanded: $favoritesExpanded
+                ) {
+                    if favoriteExercises.isEmpty {
+                        Text("No favorites yet")
+                            .fontWeight(.regular)
+                            .foregroundColor(.gray.opacity(0.6))
+                            .italic()
+                    } else {
+                        ForEach(favoriteExercises, id: \.id) { exercise in
+                            exerciseRow(exercise)
+                        }
+                    }
+                }
+                .onAppear {
+                    // Expand if there are favorites, otherwise collapsed
+                    favoritesExpanded = !favoriteExercises.isEmpty
+                }
+            }
+            .listRowBackground(Color("Background"))
+
+
+            
             if workoutCategory == .resistance {
                 ForEach(SubCategory.allCases) { sub in
                     DisclosureGroup(
@@ -163,6 +176,15 @@ struct ExerciseSelectionView: View {
     /// - Returns: A view representing the row.
     private func exerciseRow(_ exercise: Exercise) -> some View {
         HStack {
+            Image(systemName: exercise.isFavorite ? "heart.fill" : "heart")
+                .fontWeight(.regular)
+                .foregroundColor(exercise.isFavorite ? .black : .gray.opacity(0.4))
+                .onTapGesture {
+                    if let index = allExercises.firstIndex(where: { $0.id == exercise.id }) {
+                        allExercises[index].isFavorite.toggle()
+                    }
+                }
+            
             Text(exercise.name)
             
             Spacer()
@@ -170,6 +192,8 @@ struct ExerciseSelectionView: View {
             if selectedExercises.contains(exercise) {
                 Image(systemName: "circle.fill")
                     .foregroundColor(.black)
+                    .fontWeight(.regular)
+
             }
         }
         .contentShape(Rectangle())
@@ -183,9 +207,21 @@ struct ExerciseSelectionView: View {
 #Preview {
     @Previewable @State var selected: Set<Exercise> = []
     
+    // Mock exercises
+    let mockExercises: [Exercise] = [
+        Exercise(name: "Squat", category: .resistance, subCategory: .legs, isBodyweight: false, isFavorite: true),
+        Exercise(name: "Push-up", category: .resistance, subCategory: .chest, isBodyweight: true),
+        Exercise(name: "Pull-up", category: .resistance, subCategory: .back, isBodyweight: true, isFavorite: true),
+        Exercise(name: "Bicep Curl", category: .resistance, subCategory: .biceps, isBodyweight: false),
+        Exercise(name: "Lunge", category: .resistance, subCategory: .legs, isBodyweight: true),
+        Exercise(name: "Plank", category: .resistance, subCategory: .abs, isBodyweight: true),
+        Exercise(name: "Bench Press", category: .resistance, subCategory: .chest, isBodyweight: false)
+    ]
+    
     ExerciseSelectionView(
         selectedExercises: $selected,
-        workoutCategory: .resistance
+        workoutCategory: .resistance,
+        exercises: mockExercises
     )
 }
 
