@@ -3,4 +3,86 @@
    uuid = "EC5E128C-04A9-4472-9E33-5484333CD5F2"
    type = "1"
    version = "2.0">
+   <Breakpoints>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "5518E797-0E79-436A-9D1C-43E4B5D4D893"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "../../../../../var/folders/gd/y3t01ywx7ts614jpr_82d8080000gn/T/swift-generated-sources/@__swiftmacro_7Workout0022WorkoutViewswift_tiAIefMX292_0_33_7546B2E4202AD74708C76A041475A73FLl7PreviewfMf_.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "1"
+            endingLineNumber = "1"
+            landmarkName = "$s7Workout0022WorkoutViewswift_tiAIefMX292_0_33_7546B2E4202AD74708C76A041475A73FLl7PreviewfMf_15PreviewRegistryfMu_"
+            landmarkType = "37">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "9791AE42-0535-48B2-A233-737BB420C587"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "../../../../../var/folders/gd/y3t01ywx7ts614jpr_82d8080000gn/T/swift-generated-sources/@__swiftmacro_7Workout0026WorkoutListViewswift_DsAGgfMX330_0_33_D8ED12ED98CAEEF4B9DD4051486B4420Ll7PreviewfMf_.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "1"
+            endingLineNumber = "1"
+            landmarkName = "$s7Workout0026WorkoutListViewswift_DsAGgfMX330_0_33_D8ED12ED98CAEEF4B9DD4051486B4420Ll7PreviewfMf_15PreviewRegistryfMu_"
+            landmarkType = "37">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "DB491B34-D2E4-4F87-891E-EA12AD60A282"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "../../../../../var/folders/gd/y3t01ywx7ts614jpr_82d8080000gn/T/swift-generated-sources/@__swiftmacro_7Workout0026WorkoutListViewswift_DsAGgfMX330_0_33_D8ED12ED98CAEEF4B9DD4051486B4420Ll7PreviewfMf_.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "2"
+            endingLineNumber = "2"
+            landmarkName = "$s7Workout0026WorkoutListViewswift_DsAGgfMX330_0_33_D8ED12ED98CAEEF4B9DD4051486B4420Ll7PreviewfMf_15PreviewRegistryfMu_"
+            landmarkType = "37">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "91BD0B58-D44D-4D46-AD73-4D47991399D5"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "../../../../../var/folders/gd/y3t01ywx7ts614jpr_82d8080000gn/T/swift-generated-sources/@__swiftmacro_7Workout0A8ListViewV12todaysEvents33_D8ED12ED98CAEEF4B9DD4051486B4420LL5QueryfMp_.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "1"
+            endingLineNumber = "1"
+            landmarkName = "unknown"
+            landmarkType = "0">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "DCFA26C5-F356-42C5-A661-57F520CBD2D0"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "../../../../../var/folders/gd/y3t01ywx7ts614jpr_82d8080000gn/T/swift-generated-sources/@__swiftmacro_7Workout0022WorkoutViewswift_tiAIefMX267_20_9PredicatefMf_.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "1"
+            endingLineNumber = "1"
+            landmarkName = "init(workoutExercise:)"
+            landmarkType = "37">
+         </BreakpointContent>
+      </BreakpointProxy>
+   </Breakpoints>
 </Bucket>

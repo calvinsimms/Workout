@@ -319,6 +319,82 @@ struct WorkoutView: View {
                     }
                 }
             }
+            
+//            HStack {
+//                        
+//                        // History Button
+//                Button {
+//                    showingLapHistory = true
+//                } label: {
+//                    Image(systemName: "list.bullet")
+//                        .font(.title2)
+//                        .foregroundColor(.black)
+//                }
+//
+//                Spacer()
+//                
+//                Button {
+//                    showingLapTime.toggle()
+//                } label: {
+//                    HStack(spacing: 10) {
+//                        if showingLapTime {
+//                            Text("Lap \(max(timerManager.lapTimes.count + 1, 1))")
+//                                .font(.title)
+//                                .foregroundStyle(.gray)
+//
+//                            Text(timerManager.formattedTime(timerManager.lapTime))
+//                                .font(.system(.title, design: .monospaced))
+//                        } else {
+//                            Text("Total")
+//                                .font(.title)
+//                                .foregroundStyle(.gray)
+//
+//                            Text(timerManager.formattedTime(timerManager.elapsedTime))
+//                                .font(.system(.title, design: .monospaced))
+//                        }
+//                    }
+//                    .fixedSize()
+//                }
+//
+//                Spacer()
+//
+//                // Lap or Reset
+//                if timerManager.isRunning {
+//                    Button {
+//                        timerManager.lap()
+//                        showingLapTime = true
+//                    } label: {
+//                        Image(systemName: "flag")
+//                            .font(.title2)
+//                            .foregroundColor(.black)
+//                    }
+//
+//                } else {
+//                    Button {
+//                        timerManager.reset()
+//                        showingLapTime = false
+//                    } label: {
+//                        Image(systemName: "arrow.counterclockwise")
+//                            .font(.title2)
+//                            .foregroundColor(timerManager.elapsedTime == 0 ? .gray : .black)
+//                    }
+//                    .disabled(timerManager.elapsedTime == 0)
+//                }
+//
+//                Spacer()
+//                
+//                Button {
+//                    timerManager.isRunning ? timerManager.stop() : timerManager.start()
+//                } label: {
+//                    Image(systemName: timerManager.isRunning ? "stop" : "play")
+//                        .font(.title)
+//                        .foregroundColor(.black)
+//                }
+//            }
+//            .padding(.horizontal, 20)
+//            .padding(.vertical, 10)
+            
+            
         }
         .foregroundColor(.black)
         .background(Color("Background"))
@@ -352,16 +428,16 @@ struct WorkoutView: View {
                     HStack(spacing: 10) {
                         if showingLapTime {
                             Text("Lap \(max(timerManager.lapTimes.count + 1, 1))")
-                                .font(.subheadline)
-                                .foregroundStyle(.gray)
+                                .font(.title3)
+                                .foregroundStyle(.gray.opacity(0.6))
                             Text(timerManager.formattedTime(timerManager.lapTime))
-                                .font(.system(.headline, design: .monospaced))
+                                .font(.system(.title3, design: .monospaced))
                         } else {
-                            Text("Total").font(.subheadline)
-                                .foregroundStyle(.gray)
+                            Text("Total").font(.title3)
+                                .foregroundStyle(.gray.opacity(0.6))
 
                             Text(timerManager.formattedTime(timerManager.elapsedTime))
-                                .font(.system(.headline, design: .monospaced))
+                                .font(.system(.title3, design: .monospaced))
                             
                         }
                     }
@@ -384,7 +460,7 @@ struct WorkoutView: View {
                     }) {
                         Image(systemName: "arrow.counterclockwise")
                             .font(.system(size: 14))
-                            .foregroundColor(timerManager.elapsedTime == 0 ? .gray : .black)
+                            .foregroundColor(timerManager.elapsedTime == 0 ? .gray.opacity(0.6) : .black)
                     }
                     .disabled(timerManager.elapsedTime == 0)
                 }
@@ -679,8 +755,6 @@ struct SetsInputSection: View {
 }
 
 
-
-
 @MainActor
 final class TimerManager: ObservableObject {
     @Published var elapsedTime: TimeInterval = 0
@@ -688,9 +762,9 @@ final class TimerManager: ObservableObject {
     @Published var isRunning = false
     @Published var lapTimes: [TimeInterval] = []
 
-    private var timer: AnyCancellable?
-    private var startDate: Date?       // absolute start timestamp
-    private var lapStartDate: Date?    // absolute start timestamp for current lap
+    private var timerTask: Task<Void, Never>?
+    private var startDate: Date?
+    private var lapStartDate: Date?
 
     func start() {
         guard !isRunning else { return }
@@ -699,22 +773,26 @@ final class TimerManager: ObservableObject {
         startDate = startDate ?? now
         lapStartDate = lapStartDate ?? now
 
-        // Update display 60 times per second, but calculation is based on absolute time
-        timer = Timer.publish(every: 1/60, on: .main, in: .common)
-            .autoconnect()
-            .sink { [weak self] _ in
+        timerTask = Task { [weak self] in
+            let clock = ContinuousClock()
+            while !Task.isCancelled {
                 guard let self, let startDate, let lapStartDate else { return }
                 self.elapsedTime = Date().timeIntervalSince(startDate)
                 self.lapTime = Date().timeIntervalSince(lapStartDate)
+                
+                try? await clock.sleep(for: .milliseconds(100)) // update every 0.1s
             }
+        }
     }
 
     func stop() {
         isRunning = false
-        timer?.cancel()
+        timerTask?.cancel()
+        timerTask = nil
     }
 
     func reset() {
+        stop()
         elapsedTime = 0
         lapTime = 0
         lapTimes.removeAll()
@@ -724,17 +802,19 @@ final class TimerManager: ObservableObject {
 
     func lap() {
         lapTimes.insert(lapTime, at: 0)
-        lapStartDate = Date()  // reset lap start timestamp
+        lapStartDate = Date()
         lapTime = 0
     }
 
+    /// Format: M:SS.t (tenths only)
     func formattedTime(_ time: TimeInterval) -> String {
         let minutes = Int(time) / 60
         let seconds = Int(time) % 60
-        let milliseconds = Int((time * 100).truncatingRemainder(dividingBy: 100))
-        return String(format: "%02d:%02d.%02d", minutes, seconds, milliseconds)
+        let tenths = Int((time * 10).truncatingRemainder(dividingBy: 10))
+        return String(format: "%01d:%02d.%01d", minutes, seconds, tenths)
     }
 }
+
 
 
 struct LapHistorySheet: View {
