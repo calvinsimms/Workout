@@ -766,27 +766,43 @@ final class TimerManager: ObservableObject {
     private var startDate: Date?
     private var lapStartDate: Date?
 
+    private var accumulatedTime: TimeInterval = 0
+    private var accumulatedLapTime: TimeInterval = 0
+
     func start() {
         guard !isRunning else { return }
         isRunning = true
         let now = Date()
-        startDate = startDate ?? now
-        lapStartDate = lapStartDate ?? now
+
+        // start fresh OR resume from pause
+        startDate = now
+        lapStartDate = now
 
         timerTask = Task { [weak self] in
             let clock = ContinuousClock()
             while !Task.isCancelled {
                 guard let self, let startDate, let lapStartDate else { return }
-                self.elapsedTime = Date().timeIntervalSince(startDate)
-                self.lapTime = Date().timeIntervalSince(lapStartDate)
-                
-                try? await clock.sleep(for: .milliseconds(100)) // update every 0.1s
+
+                self.elapsedTime = accumulatedTime + Date().timeIntervalSince(startDate)
+                self.lapTime = accumulatedLapTime + Date().timeIntervalSince(lapStartDate)
+
+                try? await clock.sleep(for: .milliseconds(100))
             }
         }
     }
 
     func stop() {
+        guard isRunning else { return }
         isRunning = false
+
+        // accumulate time before pausing
+        if let startDate = startDate {
+            accumulatedTime += Date().timeIntervalSince(startDate)
+        }
+        if let lapStartDate = lapStartDate {
+            accumulatedLapTime += Date().timeIntervalSince(lapStartDate)
+        }
+
         timerTask?.cancel()
         timerTask = nil
     }
@@ -798,10 +814,13 @@ final class TimerManager: ObservableObject {
         lapTimes.removeAll()
         startDate = nil
         lapStartDate = nil
+        accumulatedTime = 0
+        accumulatedLapTime = 0
     }
 
     func lap() {
         lapTimes.insert(lapTime, at: 0)
+        accumulatedLapTime = 0
         lapStartDate = Date()
         lapTime = 0
     }
@@ -814,6 +833,7 @@ final class TimerManager: ObservableObject {
         return String(format: "%01d:%02d.%01d", minutes, seconds, tenths)
     }
 }
+
 
 
 
